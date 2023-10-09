@@ -143,7 +143,10 @@ public:
              const DatabaseName&,
              const BSONObj& cmdObj,
              BSONObjBuilder& result) override {
-        LOGV2(21573, "replSetTest command received", "cmdObj"_attr = cmdObj);
+        LOGV2(21573,
+              "replSetTest command received: {cmdObj}",
+              "replSetTest command received",
+              "cmdObj"_attr = cmdObj);
 
         auto replCoord = ReplicationCoordinator::get(getGlobalServiceContext());
 
@@ -161,6 +164,7 @@ public:
             uassertStatusOK(status);
             Milliseconds timeout(timeoutMillis);
             LOGV2(21574,
+                  "replSetTest: waiting {timeout} for member state to become {expectedState}",
                   "replSetTest: waiting for member state to become expected state",
                   "timeout"_attr = timeout,
                   "expectedState"_attr = expectedState);
@@ -353,7 +357,11 @@ void parseReplSetSeedList(ReplicationCoordinatorExternalState* externalState,
         seedSet.insert(m);
         // uassert(13101, "can't use localhost in replset host list", !m.isLocalHost());
         if (externalState->isSelf(m, getGlobalServiceContext())) {
-            LOGV2_DEBUG(21576, 1, "Ignoring seed (=self)", "seed"_attr = m.toString());
+            LOGV2_DEBUG(21576,
+                        1,
+                        "ignoring seed {seed} (=self)",
+                        "Ignoring seed (=self)",
+                        "seed"_attr = m.toString());
         } else {
             seeds->push_back(m);
         }
@@ -432,7 +440,10 @@ public:
             }
             b.appendArray("members", members.obj());
             configObj = b.obj();
-            LOGV2(21578, "Created configuration for initiation", "config"_attr = configObj);
+            LOGV2(21578,
+                  "created this configuration for initiation : {config}",
+                  "Created configuration for initiation",
+                  "config"_attr = configObj);
         }
 
         if (configObj.getField("version").eoo()) {
@@ -793,6 +804,7 @@ public:
 
         LOGV2_FOR_HEARTBEATS(24095,
                              2,
+                             "Received heartbeat request from {from}, {cmdObj}",
                              "Received heartbeat request",
                              "from"_attr = cmdObj.getStringField("from"),
                              "cmdObj"_attr = cmdObj);
@@ -810,6 +822,7 @@ public:
 
         LOGV2_FOR_HEARTBEATS(24096,
                              2,
+                             "Processing heartbeat request from {from}, {cmdObj}",
                              "Processing heartbeat request",
                              "from"_attr = cmdObj.getStringField("from"),
                              "cmdObj"_attr = cmdObj);
@@ -820,6 +833,7 @@ public:
 
         LOGV2_FOR_HEARTBEATS(24097,
                              2,
+                             "Generated heartbeat response to {from}, {response}",
                              "Generated heartbeat response",
                              "from"_attr = cmdObj.getStringField("from"),
                              "response"_attr = response);
@@ -846,7 +860,10 @@ public:
         status = ReplicationCoordinator::get(opCtx)->stepUpIfEligible(skipDryRun);
 
         if (!status.isOK()) {
-            LOGV2(21582, "replSetStepUp request failed", "error"_attr = causedBy(status));
+            LOGV2(21582,
+                  "replSetStepUp request failed {error}",
+                  "replSetStepUp request failed",
+                  "error"_attr = causedBy(status));
         }
 
         uassertStatusOK(status);
@@ -883,6 +900,7 @@ public:
                 kFailedWithReplSetAbortPrimaryCatchUpCmd);
         if (!status.isOK()) {
             LOGV2(21584,
+                  "replSetAbortPrimaryCatchUp request failed {error}",
                   "replSetAbortPrimaryCatchUp request failed",
                   "error"_attr = causedBy(status));
         }

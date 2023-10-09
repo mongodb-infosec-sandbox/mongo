@@ -11,8 +11,7 @@
  * ]
  */
 const testDb = db.getSiblingDB("test");
-const collName = jsTestName();
-const coll = testDb.getCollection(collName);
+const coll = testDb.getCollection("test_db");
 /*
  *  test drop
  */
@@ -60,7 +59,7 @@ if (isShardedNS) {
     // {
     //   raw: {
     //     "localhost:30000": {
-    //       "ns" : coll.getName(),
+    //       "ns" : "test.test_db",
     //       ...
     //       "valid": true,
     //       ...
@@ -84,7 +83,7 @@ if (isShardedNS) {
     validateResult = result;
 }
 
-assert.eq("test." + collName,
+assert.eq('test.test_db',
           validateResult.ns,
           'incorrect namespace in testDb.collection.validate() result: ' + tojson(validateResult));
 assert(validateResult.valid, 'collection validation failed');

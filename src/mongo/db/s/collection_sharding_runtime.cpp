@@ -331,6 +331,7 @@ void CollectionShardingRuntime::_clearFilteringMetadata(OperationContext* opCtx,
     stdx::lock_guard lk(_metadataManagerLock);
     LOGV2_DEBUG(4798530,
                 1,
+                "Clearing metadata for collection {namespace}",
                 "Clearing collection metadata",
                 logAttrs(_nss),
                 "collIsDropped"_attr = collIsDropped);
@@ -390,6 +391,7 @@ Status CollectionShardingRuntime::waitForClean(OperationContext* opCtx,
         if (orphanCleanupFuture.isReady()) {
             LOGV2_OPTIONS(21918,
                           {logv2::LogComponent::kShardingMigration},
+                          "Finished waiting for deletion of {namespace} range {orphanRange}",
                           "Finished waiting for deletion of orphans",
                           logAttrs(nss),
                           "orphanRange"_attr = redact(orphanRange.toString()));
@@ -398,6 +400,7 @@ Status CollectionShardingRuntime::waitForClean(OperationContext* opCtx,
 
         LOGV2_OPTIONS(21919,
                       {logv2::LogComponent::kShardingMigration},
+                      "Waiting for deletion of {namespace} range {orphanRange}",
                       "Waiting for deletion of orphans",
                       logAttrs(nss),
                       "orphanRange"_attr = orphanRange);

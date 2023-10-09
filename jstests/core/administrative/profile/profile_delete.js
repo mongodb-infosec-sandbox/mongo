@@ -22,8 +22,7 @@ import {getLatestProfilerEntry} from "jstests/libs/profiler.js";
 // Setup test db and collection.
 var testDB = db.getSiblingDB("profile_delete");
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 

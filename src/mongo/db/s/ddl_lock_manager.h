@@ -112,7 +112,7 @@ public:
     static const Milliseconds kSingleLockAttemptTimeout;
 
     // RAII-style class to acquire a DDL lock on the given database
-    class ScopedDatabaseDDLLock {
+    class ScopedDatabaseDDLLock : public ScopedBaseDDLLock {
     public:
         /**
          * Constructs a ScopedDatabaseDDLLock object
@@ -135,9 +135,6 @@ public:
                               const DatabaseName& db,
                               StringData reason,
                               LockMode mode);
-
-    private:
-        ScopedBaseDDLLock _dbLock;
     };
 
     // RAII-style class to acquire a DDL lock on the given collection. The database DDL lock will
@@ -238,7 +235,6 @@ protected:
     void _unregisterResourceNameIfNoLongerNeeded(WithLock lk, ResourceId resId, StringData resName);
 
 
-    friend class DDLLockManagerTest;
     friend class ShardingCatalogManager;
     friend class ShardingDDLCoordinator;
     friend class ShardingDDLCoordinatorService;

@@ -151,6 +151,7 @@ public:
                 bool exceedsSizeLimit = false;
 
                 LOGV2(22753,
+                      "Routing info requested by getShardVersion: {routingInfo}",
                       "Routing info requested by getShardVersion",
                       "routingInfo"_attr = redact(cm.toString()));
 

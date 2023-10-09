@@ -87,10 +87,8 @@ class NoopWriter::PeriodicNoopRunner {
     using NoopWriteFn = std::function<void(OperationContext*)>;
 
 public:
-    PeriodicNoopRunner(const Seconds& waitTime, NoopWriteFn&& noopWrite)
-        : _thread([this, noopWrite = std::move(noopWrite), waitTime]() mutable {
-              run(waitTime, std::move(noopWrite));
-          }) {}
+    PeriodicNoopRunner(Seconds waitTime, NoopWriteFn noopWrite)
+        : _thread([this, noopWrite, waitTime] { run(waitTime, std::move(noopWrite)); }) {}
 
     ~PeriodicNoopRunner() {
         stdx::unique_lock<Latch> lk(_mutex);
@@ -101,7 +99,7 @@ public:
     }
 
 private:
-    void run(const Seconds& waitTime, NoopWriteFn&& noopWrite) {
+    void run(Seconds waitTime, NoopWriteFn noopWrite) {
         Client::initThread("NoopWriter");
 
         while (true) {
@@ -201,6 +199,8 @@ void NoopWriter::_writeNoop(OperationContext* opCtx) {
     if (lastAppliedOpTime != _lastKnownOpTime) {
         LOGV2_DEBUG(21221,
                     1,
+                    "Not scheduling a noop write. Last known OpTime: {lastKnownOpTime} != last "
+                    "primary OpTime: {lastAppliedOpTime}",
                     "Not scheduling a noop write. Last known OpTime != last primary OpTime",
                     "lastKnownOpTime"_attr = _lastKnownOpTime,
                     "lastAppliedOpTime"_attr = lastAppliedOpTime);
@@ -209,6 +209,8 @@ void NoopWriter::_writeNoop(OperationContext* opCtx) {
             const auto logLevel = TestingProctor::instance().isEnabled() ? 0 : 1;
             LOGV2_DEBUG(21222,
                         logLevel,
+                        "Writing noop to oplog as there has been no writes to this replica set in "
+                        "over {writeInterval}",
                         "Writing noop to oplog as there has been no writes to this replica set "
                         "within write interval",
                         "writeInterval"_attr = _writeInterval);
@@ -222,7 +224,11 @@ void NoopWriter::_writeNoop(OperationContext* opCtx) {
     }
 
     _lastKnownOpTime = replCoord->getMyLastAppliedOpTime();
-    LOGV2_DEBUG(21223, 1, "Set last known op time", "lastKnownOpTime"_attr = _lastKnownOpTime);
+    LOGV2_DEBUG(21223,
+                1,
+                "Set last known op time to {lastKnownOpTime}",
+                "Set last known op time",
+                "lastKnownOpTime"_attr = _lastKnownOpTime);
 }
 
 }  // namespace repl

@@ -719,10 +719,13 @@ void Balancer::_mainThread() {
     while (!_terminationRequested()) {
         Status refreshStatus = balancerConfig->refreshAndCheck(opCtx.get());
         if (!refreshStatus.isOK()) {
-            LOGV2_WARNING(21876,
-                          "Got error while refreshing balancer settings, will retry with a backoff",
-                          "backoffInterval"_attr = Milliseconds(kInitBackoffInterval),
-                          "error"_attr = refreshStatus);
+            LOGV2_WARNING(
+                21876,
+                "Balancer settings could not be loaded because of {error} and will be retried in "
+                "{backoffInterval}",
+                "Got error while refreshing balancer settings, will retry with a backoff",
+                "backoffInterval"_attr = Milliseconds(kInitBackoffInterval),
+                "error"_attr = refreshStatus);
 
             _sleepFor(opCtx.get(), kInitBackoffInterval);
             continue;
@@ -754,7 +757,10 @@ void Balancer::_mainThread() {
 
             Status refreshStatus = balancerConfig->refreshAndCheck(opCtx.get());
             if (!refreshStatus.isOK()) {
-                LOGV2_WARNING(21877, "Skipping balancing round", "error"_attr = refreshStatus);
+                LOGV2_WARNING(21877,
+                              "Skipping balancing round due to {error}",
+                              "Skipping balancing round",
+                              "error"_attr = refreshStatus);
                 _endRound(opCtx.get(), kBalanceRoundDefaultInterval);
                 continue;
             }
@@ -787,6 +793,8 @@ void Balancer::_mainThread() {
 
             LOGV2_DEBUG(21860,
                         1,
+                        "Start balancing round. waitForDelete: {waitForDelete}, "
+                        "secondaryThrottle: {secondaryThrottle}",
                         "Start balancing round",
                         "waitForDelete"_attr = balancerConfig->waitForDelete(),
                         "secondaryThrottle"_attr = balancerConfig->getSecondaryThrottle().toBSON());
@@ -810,7 +818,10 @@ void Balancer::_mainThread() {
             {
                 Status status = _splitChunksIfNeeded(opCtx.get());
                 if (!status.isOK()) {
-                    LOGV2_WARNING(21878, "Failed to split chunks", "error"_attr = status);
+                    LOGV2_WARNING(21878,
+                                  "Failed to split chunks due to {error}",
+                                  "Failed to split chunks",
+                                  "error"_attr = status);
                 } else {
                     LOGV2_DEBUG(21861, 1, "Done enforcing zone range boundaries.");
                 }
@@ -900,7 +911,10 @@ void Balancer::_mainThread() {
                 }
             }
         } catch (const DBException& e) {
-            LOGV2(21865, "Error while doing balance", "error"_attr = e);
+            LOGV2(21865,
+                  "caught exception while doing balance: {error}",
+                  "Error while doing balance",
+                  "error"_attr = e);
 
             // Just to match the opening statement if in log level 1
             LOGV2_DEBUG(21866, 1, "End balancing round");
@@ -1022,6 +1036,8 @@ bool Balancer::_checkOIDs(OperationContext* opCtx) {
                 oids[x] = shardId;
             } else {
                 LOGV2(21868,
+                      "error: 2 machines have {oidMachine} as oid machine piece: {firstShardId} "
+                      "and {secondShardId}",
                       "Two machines have the same oidMachine value",
                       "oidMachine"_attr = x,
                       "firstShardId"_attr = shardId,
@@ -1052,7 +1068,10 @@ bool Balancer::_checkOIDs(OperationContext* opCtx) {
                 return false;
             }
         } else {
-            LOGV2(21869, "warning: oidMachine not set on shard", "shard"_attr = s->toString());
+            LOGV2(21869,
+                  "warning: oidMachine not set on: {shard}",
+                  "warning: oidMachine not set on shard",
+                  "shard"_attr = s->toString());
         }
     }
 
@@ -1086,6 +1105,7 @@ Status Balancer::_splitChunksIfNeeded(OperationContext* opCtx) {
             splitInfo.splitKeys);
         if (!splitStatus.isOK()) {
             LOGV2_WARNING(21879,
+                          "Failed to split chunk {splitInfo} {error}",
                           "Failed to split chunk",
                           "splitInfo"_attr = redact(splitInfo.toString()),
                           "error"_attr = redact(splitStatus.getStatus()));
@@ -1172,6 +1192,7 @@ int Balancer::_moveChunks(OperationContext* opCtx,
             ++numChunksProcessed;
 
             LOGV2(21871,
+                  "Migration {migrateInfo} failed with {error}, going to try splitting the chunk",
                   "Migration failed, going to try splitting the chunk",
                   "migrateInfo"_attr = redact(migrateInfo.toString()),
                   "error"_attr = redact(status));
@@ -1207,6 +1228,7 @@ int Balancer::_moveChunks(OperationContext* opCtx,
         }
 
         LOGV2(21872,
+              "Migration {migrateInfo} failed with {error}",
               "Migration failed",
               "migrateInfo"_attr = redact(migrateInfo.toString()),
               "error"_attr = redact(status));

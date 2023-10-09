@@ -48,10 +48,10 @@ SearchCursorStage::SearchCursorStage(NamespaceString nss,
                                      value::SlotVector fieldSlots,
                                      value::SlotId cursorIdSlot,
                                      value::SlotId firstBatchSlot,
-                                     boost::optional<value::SlotId> searchQuerySlot,
+                                     value::SlotId searchQuerySlot,
                                      boost::optional<value::SlotId> sortSpecSlot,
-                                     boost::optional<value::SlotId> limitSlot,
-                                     boost::optional<value::SlotId> protocolVersionSlot,
+                                     value::SlotId limitSlot,
+                                     value::SlotId protocolVersionSlot,
                                      boost::optional<ExplainOptions::Verbosity> explain,
                                      PlanYieldPolicy* yieldPolicy,
                                      PlanNodeId planNodeId)
@@ -135,17 +135,11 @@ void SearchCursorStage::prepare(CompileCtx& ctx) {
         _metadataAccessors, _metadataAccessorsMap, _metadataNames, _metadataSlots);
     initializeAccessorsVector(_fieldAccessors, _fieldAccessorsMap, _fieldNames, _fieldSlots);
 
+    _limitAccessor = ctx.getAccessor(_limitSlot);
+    _protocolVersionAccessor = ctx.getAccessor(_protocolVersionSlot);
     _cursorIdAccessor = ctx.getAccessor(_cursorIdSlot);
     _firstBatchAccessor = ctx.getAccessor(_firstBatchSlot);
-    if (_searchQuerySlot) {
-        _searchQueryAccessor = ctx.getAccessor(*_searchQuerySlot);
-    }
-    if (_limitSlot) {
-        _limitAccessor = ctx.getAccessor(*_limitSlot);
-    }
-    if (_protocolVersionSlot) {
-        _protocolVersionAccessor = ctx.getAccessor(*_protocolVersionSlot);
-    }
+    _searchQueryAccessor = ctx.getAccessor(_searchQuerySlot);
     if (_sortSpecSlot) {
         _sortSpecAccessor = ctx.getAccessor(*_sortSpecSlot);
     }
@@ -172,25 +166,19 @@ void SearchCursorStage::open(bool reOpen) {
     auto optTimer(getOptTimer(_opCtx));
 
     _commonStats.opens++;
-
-    if (_limitAccessor) {
-        auto [limitTag, limitVal] = _limitAccessor->getViewOfValue();
-        if (limitTag != value::TypeTags::Nothing) {
-            tassert(
-                7816106, "limit should be an integer", limitTag == value::TypeTags::NumberInt64);
-            _limit = value::bitcastTo<uint64_t>(limitVal);
-        }
+    auto [limitTag, limitVal] = _limitAccessor->getViewOfValue();
+    if (limitTag != value::TypeTags::Nothing) {
+        tassert(7816106, "limit should be an integer", limitTag == value::TypeTags::NumberInt64);
+        _limit = value::bitcastTo<uint64_t>(limitVal);
     }
 
     boost::optional<int> protocolVersion;
-    if (_protocolVersionAccessor) {
-        auto [protocolVersionTag, protocolVersionVal] = _protocolVersionAccessor->getViewOfValue();
-        if (protocolVersionTag != value::TypeTags::Nothing) {
-            tassert(7816105,
-                    "protocolVersion should be an integer",
-                    protocolVersionTag == value::TypeTags::NumberInt32);
-            protocolVersion = value::bitcastTo<int>(protocolVersionVal);
-        }
+    auto [protocolVersionTag, protocolVersionVal] = _protocolVersionAccessor->getViewOfValue();
+    if (protocolVersionTag != value::TypeTags::Nothing) {
+        tassert(7816105,
+                "protocolVersion should be an integer",
+                protocolVersionTag == value::TypeTags::NumberInt32);
+        protocolVersion = value::bitcastTo<int>(protocolVersionVal);
     }
 
     std::vector<BSONObj> batchVec;
@@ -211,10 +199,8 @@ void SearchCursorStage::open(bool reOpen) {
                 cursorIdTag == value::TypeTags::NumberInt64);
     auto cursorId = value::bitcastTo<CursorId>(cursorIdVal);
 
-    if (_searchQueryAccessor) {
-        auto [queryTag, queryVal] = _searchQueryAccessor->getViewOfValue();
-        _searchQuery = BSONObj(value::bitcastTo<char*>(queryVal));
-    }
+    auto [queryTag, queryVal] = _searchQueryAccessor->getViewOfValue();
+    _searchQuery = BSONObj(value::bitcastTo<char*>(queryVal));
 
     // Establish the cursor that comes from cursorIdSlot.
     tassert(7816103, "Cursor should not be established yet", !_cursor);
@@ -374,9 +360,7 @@ std::unique_ptr<PlanStageStats> SearchCursorStage::getStats(bool includeDebugInf
 
         bob.appendNumber("cursorIdSlot", static_cast<long long>(_cursorIdSlot));
         bob.appendNumber("firstBatchSlot", static_cast<long long>(_firstBatchSlot));
-        if (_limitSlot) {
-            bob.appendNumber("limitSlot", static_cast<long long>(*_limitSlot));
-        }
+        bob.appendNumber("limitSlot", static_cast<long long>(_limitSlot));
 
         ret->debugInfo = bob.obj();
     }
@@ -398,7 +382,7 @@ std::vector<DebugPrinter::Block> SearchCursorStage::debugPrint() const {
 
     DebugPrinter::addIdentifier(ret, _cursorIdSlot);
     DebugPrinter::addIdentifier(ret, _firstBatchSlot);
-    addDebugOptionalSlotIdentifier(ret, _limitSlot);
+    DebugPrinter::addIdentifier(ret, _limitSlot);
 
     return ret;
 }

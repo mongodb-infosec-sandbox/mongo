@@ -85,8 +85,6 @@ public:
 
         BSONObjBuilder result;
 
-        result.append("clusterRoles", toBSON(serverGlobalParams.clusterRole));
-
         result.append("configsvrConnectionString",
                       shardRegistry->getConfigServerConnectionString().toString());
 
@@ -174,7 +172,6 @@ public:
         using Metrics = ShardingDataTransformCumulativeMetrics;
         Metrics::getForResharding(sCtx)->reportForServerStatus(bob);
         Metrics::getForMoveCollection(sCtx)->reportForServerStatus(bob);
-        Metrics::getForBalancerMoveCollection(sCtx)->reportForServerStatus(bob);
         Metrics::getForUnshardCollection(sCtx)->reportForServerStatus(bob);
 
         // The serverStatus command is run before the FCV is initialized so we ignore it when

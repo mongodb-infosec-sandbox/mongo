@@ -106,7 +106,10 @@ public:
         void _internalRun(OperationContext* opCtx) {
             const NamespaceString& nss = ns();
 
-            audit::logRefineCollectionShardKey(opCtx->getClient(), nss, request().getKey());
+            audit::logRefineCollectionShardKey(
+                opCtx->getClient(),
+                NamespaceStringUtil::serialize(nss, SerializationContext::stateDefault()),
+                request().getKey());
 
             // Set the operation context read concern level to local for reads into the config
             // database.
@@ -203,7 +206,10 @@ public:
                             shardkeyutil::ValidationBehaviorsRefineShardKey(opCtx, nss));
                     });
             }
-            LOGV2(21922, "CMD: refineCollectionShardKey", "request"_attr = request().toBSON({}));
+            LOGV2(21922,
+                  "CMD: refineCollectionShardKey: {request}",
+                  "CMD: refineCollectionShardKey",
+                  "request"_attr = request().toBSON({}));
 
             ShardingCatalogManager::get(opCtx)->refineCollectionShardKeyDEPRECATED(
                 opCtx, nss, newShardKeyPattern);

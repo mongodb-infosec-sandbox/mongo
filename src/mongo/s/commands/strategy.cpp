@@ -184,6 +184,7 @@ void appendRequiredFieldsToResponse(OperationContext* opCtx, BSONObjBuilder* res
         if (VectorClock::isValidComponentTime(operationTime)) {
             LOGV2_DEBUG(22764,
                         5,
+                        "Appending operationTime: {operationTime}",
                         "Appending operationTime",
                         "operationTime"_attr = operationTime.asTimestamp());
             operationTime.appendAsOperationTime(responseBuilder);
@@ -193,6 +194,7 @@ void appendRequiredFieldsToResponse(OperationContext* opCtx, BSONObjBuilder* res
             // actual.
             LOGV2_DEBUG(22765,
                         5,
+                        "Appending clusterTime as operationTime {clusterTime}",
                         "Appending clusterTime as operationTime",
                         "clusterTime"_attr = clusterTime.asTimestamp());
             clusterTime.appendAsOperationTime(responseBuilder);
@@ -434,7 +436,7 @@ private:
     const StringData _commandName;
 
     std::shared_ptr<CommandInvocation> _invocation;
-    boost::optional<NamespaceString> _ns;
+    boost::optional<std::string> _ns;
     OperationSessionInfoFromClient _osi;
     boost::optional<WriteConcernOptions> _wc;
     boost::optional<bool> _isHello;
@@ -590,8 +592,9 @@ void ParseAndRunCommand::_parseCommand() {
     // Set the logical optype, command object and namespace as soon as we identify the command. If
     // the command does not define a fully-qualified namespace, set CurOp to the generic command
     // namespace db.$cmd.
-    _ns.emplace(_invocation->ns());
-    const auto nss = (NamespaceString(request.getDbName()) == *_ns
+    _ns.emplace(
+        NamespaceStringUtil::serialize(_invocation->ns(), SerializationContext::stateDefault()));
+    const auto nss = (request.getDatabase() == *_ns
                           ? NamespaceString::makeCommandNamespace(_invocation->ns().dbName())
                           : _invocation->ns());
 
@@ -646,10 +649,9 @@ Status ParseAndRunCommand::RunInvocation::_setup() {
     if (MONGO_unlikely(
             hangBeforeCheckingMongosShutdownInterrupt.shouldFail([&](const BSONObj& data) {
                 if (data.hasField("cmdName") && data.hasField("ns")) {
-                    const auto cmdNss = _parc->_ns.value();
-                    const auto fpNss = NamespaceStringUtil::parseFailPointData(data, "ns"_sd);
-                    return (data.getStringField("cmdName") == _parc->_commandName &&
-                            fpNss == cmdNss);
+                    std::string cmdNS = _parc->_ns.value();
+                    return ((data.getStringField("cmdName") == _parc->_commandName) &&
+                            (data.getStringField("ns") == cmdNS));
                 }
                 return false;
             }))) {
@@ -746,6 +748,7 @@ Status ParseAndRunCommand::RunInvocation::_setup() {
                     defaultWriteConcernSource == DefaultWriteConcernSourceEnum::kGlobal;
                 LOGV2_DEBUG(22766,
                             2,
+                            "Applying default writeConcern on {command} of {writeConcern}",
                             "Applying default writeConcern on command",
                             "command"_attr = request.getCommandName(),
                             "writeConcern"_attr = *wcDefault);
@@ -804,6 +807,7 @@ Status ParseAndRunCommand::RunInvocation::_setup() {
         stdx::lock_guard<Client> lk(*opCtx->getClient());
         LOGV2_DEBUG(22767,
                     2,
+                    "Applying default readConcern on {command} of {readConcern}",
                     "Applying default readConcern on command",
                     "command"_attr = invocation->definition()->getName(),
                     "readConcern"_attr = rcDefault);
@@ -936,7 +940,8 @@ void ParseAndRunCommand::RunAndRetry::_setup() {
         // Re-parse before retrying in case the process of run()-ning the invocation could
         // affect the parsed result.
         _parc->_invocation = command->parse(opCtx, request);
-        invariant(_parc->_invocation->ns() == _parc->_ns,
+        invariant(NamespaceStringUtil::serialize(
+                      _parc->_invocation->ns(), SerializationContext::stateDefault()) == _parc->_ns,
                   "unexpected change of namespace when retrying");
     }
 
@@ -1227,13 +1232,18 @@ void ClientCommand::_parseMessage() try {
     if (ErrorCodes::isConnectionFatalMessageParseError(ex.code()))
         _propagateException = true;
 
-    LOGV2_DEBUG(22769, 1, "Exception thrown while parsing command", "error"_attr = redact(ex));
+    LOGV2_DEBUG(22769,
+                1,
+                "Exception thrown while parsing command {error}",
+                "Exception thrown while parsing command",
+                "error"_attr = redact(ex));
     throw;
 }
 
 Future<void> ClientCommand::_execute() {
     LOGV2_DEBUG(22770,
                 3,
+                "Command begin db: {db} msg id: {headerId}",
                 "Command begin",
                 "db"_attr = _getDatabaseStringForLogging(),
                 "headerId"_attr = _rec->getMessage().header().getId());
@@ -1243,17 +1253,20 @@ Future<void> ClientCommand::_execute() {
         .then([this] {
             LOGV2_DEBUG(22771,
                         3,
+                        "Command end db: {db} msg id: {headerId}",
                         "Command end",
                         "db"_attr = _getDatabaseStringForLogging(),
                         "headerId"_attr = _rec->getMessage().header().getId());
         })
         .tapError([this](Status status) {
-            LOGV2_DEBUG(22772,
-                        1,
-                        "Exception thrown while processing command",
-                        "db"_attr = _getDatabaseStringForLogging(),
-                        "headerId"_attr = _rec->getMessage().header().getId(),
-                        "error"_attr = redact(status));
+            LOGV2_DEBUG(
+                22772,
+                1,
+                "Exception thrown while processing command on {db} msg id: {headerId} {error}",
+                "Exception thrown while processing command",
+                "db"_attr = _getDatabaseStringForLogging(),
+                "headerId"_attr = _rec->getMessage().header().getId(),
+                "error"_attr = redact(status));
 
             // Record the exception in CurOp.
             CurOp::get(_rec->getOpCtx())->debug().errInfo = std::move(status);

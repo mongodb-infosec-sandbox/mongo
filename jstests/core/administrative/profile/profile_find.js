@@ -13,8 +13,7 @@ import {getLatestProfilerEntry} from "jstests/libs/profiler.js";
 
 var testDB = db.getSiblingDB("profile_find");
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 const profileEntryFilter = {

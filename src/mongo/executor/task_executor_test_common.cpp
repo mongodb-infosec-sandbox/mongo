@@ -113,8 +113,10 @@ public:
     CetRegistrationAgent(const std::string& name, ExecutorTestCaseFactory makeTest) {
         auto& entry = executorTestCaseRegistry()[name];
         if (entry) {
-            LOGV2_FATAL(
-                28713, "Multiple attempts to register ExecutorTest", "executor"_attr = name);
+            LOGV2_FATAL(28713,
+                        "Multiple attempts to register ExecutorTest named {executor}",
+                        "Multiple attempts to register ExecutorTest",
+                        "executor"_attr = name);
         }
         entry = std::move(makeTest);
     }
@@ -396,7 +398,7 @@ COMMON_EXECUTOR_TEST(EventWaitingWithTimeoutTest) {
     serviceContext->setFastClockSource(std::make_unique<ClockSourceMock>());
     auto mockClock = static_cast<ClockSourceMock*>(serviceContext->getFastClockSource());
 
-    auto client = serviceContext->getService()->makeClient("for testing");
+    auto client = serviceContext->makeClient("for testing");
     auto opCtx = client->makeOperationContext();
 
     auto deadline = mockClock->now() + Milliseconds{1};
@@ -418,7 +420,7 @@ COMMON_EXECUTOR_TEST(EventSignalWithTimeoutTest) {
     serviceContext->setFastClockSource(std::make_unique<ClockSourceMock>());
     auto mockClock = static_cast<ClockSourceMock*>(serviceContext->getFastClockSource());
 
-    auto client = serviceContext->getService()->makeClient("for testing");
+    auto client = serviceContext->makeClient("for testing");
     auto opCtx = client->makeOperationContext();
 
     auto deadline = mockClock->now() + Milliseconds{1};

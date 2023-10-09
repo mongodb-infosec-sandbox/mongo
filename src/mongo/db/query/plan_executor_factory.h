@@ -86,7 +86,7 @@ StatusWith<std::unique_ptr<PlanExecutor, PlanExecutor::Deleter>> make(
     VariantCollectionPtrOrAcquisition collection,
     PlanYieldPolicy::YieldPolicy yieldPolicy,
     size_t plannerOptions,
-    NamespaceString nss = NamespaceString::kEmpty,
+    NamespaceString nss = NamespaceString(),
     std::unique_ptr<QuerySolution> qs = nullptr);
 
 /**
@@ -103,7 +103,7 @@ StatusWith<std::unique_ptr<PlanExecutor, PlanExecutor::Deleter>> make(
     VariantCollectionPtrOrAcquisition collection,
     PlanYieldPolicy::YieldPolicy yieldPolicy,
     size_t plannerOptions,
-    NamespaceString nss = NamespaceString::kEmpty,
+    NamespaceString nss = NamespaceString(),
     std::unique_ptr<QuerySolution> qs = nullptr);
 
 StatusWith<std::unique_ptr<PlanExecutor, PlanExecutor::Deleter>> make(

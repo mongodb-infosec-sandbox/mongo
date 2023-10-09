@@ -225,6 +225,7 @@ WiredTigerRecordStore::OplogTruncateMarkers::createOplogTruncateMarkers(Operatio
         },
         numTruncateMarkersToKeep);
     LOGV2(22382,
+          "WiredTiger record store oplog processing took {duration}ms",
           "WiredTiger record store oplog processing finished",
           "duration"_attr = duration_cast<Milliseconds>(initialSetOfMarkers.timeTaken));
     return std::make_shared<WiredTigerRecordStore::OplogTruncateMarkers>(
@@ -706,7 +707,7 @@ WiredTigerRecordStore::~WiredTigerRecordStore() {
 NamespaceString WiredTigerRecordStore::ns(OperationContext* opCtx) const {
     auto nss = namespaceForUUID(opCtx, _uuid);
 
-    return nss ? *nss : NamespaceString::kEmpty;
+    return nss ? *nss : NamespaceString();
 }
 
 void WiredTigerRecordStore::checkSize(OperationContext* opCtx) {

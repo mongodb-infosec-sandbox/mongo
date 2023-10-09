@@ -67,7 +67,7 @@ public:
     size_t estimateCompileTimeSize() const final;
 
 protected:
-    void doSaveState(bool) final;
+    void doRestoreState(bool) final;
 
 private:
     PlanState advanceChild();

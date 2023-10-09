@@ -85,7 +85,7 @@ public:
             LOGV2(8018400,
                   "Running a reshard collection command for the unshard collection request.",
                   "dbName"_attr = request().getDbName(),
-                  "toShard"_attr = toShard);
+                  "toShard"_attr = request().getToShard());
 
             const auto dbInfo =
                 uassertStatusOK(Grid::get(opCtx)->catalogCache()->getDatabase(opCtx, nss.dbName()));

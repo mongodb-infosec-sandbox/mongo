@@ -123,10 +123,6 @@ test::run()
     enable_logging = _config->get_bool(ENABLE_LOGGING);
     db_create_config += ",log=(enabled=" + std::string(enable_logging ? "true" : "false") + ")";
 
-    /* Enable or disable background compact debug mode. */
-    if (_config->get_bool(BACKGROUND_COMPACT_DEBUG_MODE))
-        db_create_config += ",debug_mode=(background_compact)";
-
     /* Maximum waiting time for the cache to get unstuck. */
     cache_max_wait_ms = _config->get_int(CACHE_MAX_WAIT_MS);
     db_create_config += ",cache_max_wait_ms=" + std::to_string(cache_max_wait_ms);
@@ -172,10 +168,8 @@ test::run()
         it->finish();
 
     /* Validation stage. */
-    if (_config->get_bool(VALIDATE))
-        this->validate(_operation_tracker->enabled(),
-          _operation_tracker->get_operation_table_name(),
-          _operation_tracker->get_schema_table_name(), _workload_manager->get_database());
+    this->validate(_operation_tracker->enabled(), _operation_tracker->get_operation_table_name(),
+      _operation_tracker->get_schema_table_name(), _workload_manager->get_database());
 
     /* Log perf stats. */
     metrics_writer::instance().output_perf_file(_args.test_name);

@@ -542,16 +542,6 @@ public:
     }
 
     /**
-     * foo = true
-     * foo. = false
-     * foo.a = false
-     */
-    bool isDbOnly() const {
-        auto offset = _hasTenantId() ? kDataOffset + OID::kOIDSize : kDataOffset;
-        return offset + _dbNameOffsetEnd() == _data.size();
-    }
-
-    /**
      * Returns whether the specified namespace is never tracked in the sharding catalog.
      *
      * These class of namespaces are used for internal purposes only and they are only registered in
@@ -880,11 +870,10 @@ private:
                 "namespaces cannot have embedded null characters",
                 collectionName.find('\0') == std::string::npos);
 
-        _data.resize(collectionName.empty() ? dbName._data.size()
-                                            : dbName._data.size() + 1 + collectionName.size());
+        _data.resize(dbName._data.size() + 1 + collectionName.size());
         std::memcpy(_data.data(), dbName._data.data(), dbName._data.size());
+        *reinterpret_cast<uint8_t*>(_data.data() + dbName._data.size()) = '.';
         if (!collectionName.empty()) {
-            *reinterpret_cast<uint8_t*>(_data.data() + dbName._data.size()) = '.';
             std::memcpy(_data.data() + dbName._data.size() + 1,
                         collectionName.rawData(),
                         collectionName.size());
@@ -1125,6 +1114,18 @@ inline bool nsIsFull(StringData ns) {
     if (i == ns.size() - 1)
         return false;
     return true;
+}
+
+/**
+ * foo = true
+ * foo. = false
+ * foo.a = false
+ */
+inline bool nsIsDbOnly(StringData ns) {
+    size_t i = ns.find('.');
+    if (i == std::string::npos)
+        return true;
+    return false;
 }
 
 inline bool NamespaceString::validDBName(StringData db, DollarInDbNameBehavior behavior) {

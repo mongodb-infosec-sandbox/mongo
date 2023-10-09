@@ -2533,7 +2533,11 @@ IndexBuildsCoordinator::PostSetupAction IndexBuildsCoordinator::_setUpIndexBuild
         const auto& status = ex.toStatus();
         if (IndexBuildsCoordinator::isCreateIndexesErrorSafeToIgnore(status,
                                                                      options.indexConstraints)) {
-            LOGV2_DEBUG(20662, 1, "Ignoring indexing error", "error"_attr = redact(status));
+            LOGV2_DEBUG(20662,
+                        1,
+                        "Ignoring indexing error: {error}",
+                        "Ignoring indexing error",
+                        "error"_attr = redact(status));
             return PostSetupAction::kCompleteIndexBuildEarly;
         }
 
@@ -2687,7 +2691,7 @@ namespace {
 
 template <typename Func>
 void runOnAlternateContext(OperationContext* opCtx, std::string name, Func func) {
-    auto newClient = opCtx->getServiceContext()->getService()->makeClient(name);
+    auto newClient = opCtx->getServiceContext()->makeClient(name);
 
     // TODO(SERVER-74657): Please revisit if this thread could be made killable.
     {

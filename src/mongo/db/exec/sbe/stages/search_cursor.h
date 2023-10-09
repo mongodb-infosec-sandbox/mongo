@@ -66,10 +66,10 @@ public:
                       value::SlotVector fieldSlots,
                       value::SlotId cursorIdSlot,
                       value::SlotId firstBatchSlot,
-                      boost::optional<value::SlotId> searchQuerySlot,
+                      value::SlotId searchQuerySlot,
                       boost::optional<value::SlotId> sortSpecSlot,
-                      boost::optional<value::SlotId> limitSlot,
-                      boost::optional<value::SlotId> protocolVersionSlot,
+                      value::SlotId limitSlot,
+                      value::SlotId protocolVersionSlot,
                       boost::optional<ExplainOptions::Verbosity> explain,
                       PlanYieldPolicy* yieldPolicy,
                       PlanNodeId planNodeId);
@@ -113,10 +113,10 @@ private:
     // Input slots.
     const value::SlotId _cursorIdSlot;
     const value::SlotId _firstBatchSlot;
-    const boost::optional<value::SlotId> _searchQuerySlot;
+    const value::SlotId _searchQuerySlot;
     const boost::optional<value::SlotId> _sortSpecSlot;
-    const boost::optional<value::SlotId> _limitSlot;
-    const boost::optional<value::SlotId> _protocolVersionSlot;
+    const value::SlotId _limitSlot;
+    const value::SlotId _protocolVersionSlot;
 
     // Output slot accessors.
     value::OwnedValueAccessor _resultAccessor;
@@ -128,7 +128,7 @@ private:
     // Input slot accessors.
     value::SlotAccessor* _cursorIdAccessor;
     value::SlotAccessor* _firstBatchAccessor;
-    value::SlotAccessor* _searchQueryAccessor{nullptr};
+    value::SlotAccessor* _searchQueryAccessor;
     value::SlotAccessor* _sortSpecAccessor{nullptr};
     value::SlotAccessor* _limitAccessor{nullptr};
     value::SlotAccessor* _protocolVersionAccessor{nullptr};

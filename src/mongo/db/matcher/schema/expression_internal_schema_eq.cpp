@@ -68,7 +68,7 @@ void InternalSchemaEqMatchExpression::debugString(StringBuilder& debug,
 }
 
 void InternalSchemaEqMatchExpression::appendSerializedRightHandSide(
-    BSONObjBuilder* bob, const SerializationOptions& opts, bool includePath) const {
+    BSONObjBuilder* bob, const SerializationOptions& opts) const {
     if (opts.literalPolicy != LiteralSerializationPolicy::kUnchanged && _rhsElem.isABSONObj()) {
         BSONObjBuilder exprSpec(bob->subobjStart(kName));
         opts.addHmacedObjToBuilder(&exprSpec, _rhsElem.Obj());

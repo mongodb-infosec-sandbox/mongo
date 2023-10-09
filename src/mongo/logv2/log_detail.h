@@ -73,37 +73,74 @@ void doUnstructuredLogImpl(LogSeverity const& severity,  // NOLINT
 
 
 // doLogUnpacked overloads require the arguments to be flattened attributes
-template <size_t N, typename... Args>
+template <typename S, typename... Args>
 void doLogUnpacked(int32_t id,
                    LogSeverity const& severity,
                    LogOptions const& options,
-                   const char (&msg)[N],
+                   const S& message,
                    const NamedArg<Args>&... args) {
     auto attributes = AttributeStorage(args...);
 
-    doLogImpl(id, severity, options, msg, attributes);
+    fmt::string_view msg{message};
+    doLogImpl(id, severity, options, StringData(msg.data(), msg.size()), attributes);
 }
 
-template <size_t N>
+template <typename S, size_t N, typename... Args>
 void doLogUnpacked(int32_t id,
                    LogSeverity const& severity,
                    LogOptions const& options,
+                   const S&,  // formatMsg not used
+                   const char (&msg)[N],
+                   const NamedArg<Args>&... args) {
+    doLogUnpacked(id, severity, options, msg, args...);
+}
+
+template <typename S>
+void doLogUnpacked(int32_t id,
+                   LogSeverity const& severity,
+                   LogOptions const& options,
+                   const S& message,
+                   const DynamicAttributes& dynamicAttrs) {
+    fmt::string_view msg{message};
+    doLogImpl(id, severity, options, StringData(msg.data(), msg.size()), dynamicAttrs);
+}
+
+template <typename S, size_t N>
+void doLogUnpacked(int32_t id,
+                   LogSeverity const& severity,
+                   LogOptions const& options,
+                   const S&,  // formatMsg not used
                    const char (&msg)[N],
                    const DynamicAttributes& dynamicAttrs) {
-    doLogImpl(id, severity, options, msg, dynamicAttrs);
+    doLogUnpacked(id, severity, options, msg, dynamicAttrs);
 }
 
 // Args may be raw attributes or CombinedAttr's here. We need to flatten any combined attributes
 // into just raw attributes for doLogUnpacked. We do this building flat tuples for every argument,
 // concatenating them into a single tuple that we can expand again using apply.
-template <size_t N, typename... Args>
+template <typename S, typename... Args>
 void doLog(int32_t id,
            LogSeverity const& severity,
            LogOptions const& options,
+           const S& formatMsg,
+           const Args&... args) {
+    std::apply([id, &severity, &options, &formatMsg](
+                   auto&&... args) { doLogUnpacked(id, severity, options, formatMsg, args...); },
+               std::tuple_cat(toFlatAttributesTupleRef(args)...));
+}
+
+template <typename S, size_t N, typename... Args>
+void doLog(int32_t id,
+           LogSeverity const& severity,
+           LogOptions const& options,
+           const S& formatMsg,
            const char (&msg)[N],
            const Args&... args) {
-    std::apply([&](auto&&... tup) { doLogUnpacked(id, severity, options, msg, tup...); },
-               std::tuple_cat(toFlatAttributesTupleRef(args)...));
+    std::apply(
+        [id, &severity, &options, &formatMsg, &msg](auto&&... unpackedArgs) {
+            doLogUnpacked(id, severity, options, formatMsg, msg, unpackedArgs...);
+        },
+        std::tuple_cat(toFlatAttributesTupleRef(args)...));
 }
 
 }  // namespace detail

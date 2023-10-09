@@ -279,7 +279,8 @@ void statsToBSON(const QuerySolutionNode* node,
                 BSONObjBuilder filtersBob(bob->subobjStart("filtersByPath"));
                 for (const auto& [path, matchExpr] : cisn->filtersByPath) {
                     SerializationOptions opts;
-                    filtersBob.append(path, matchExpr->serialize(opts, false));
+                    opts.includePath = false;
+                    filtersBob.append(path, matchExpr->serialize(opts));
                 }
             }
 
@@ -301,10 +302,6 @@ void statsToBSON(const QuerySolutionNode* node,
                 for (const auto& field : utsbn->bucketSpec.fieldSet()) {
                     fieldsBab.append(field);
                 }
-                if (utsbn->bucketSpec.behavior() == timeseries::BucketSpec::Behavior::kInclude &&
-                    utsbn->includeMeta) {
-                    fieldsBab.append(*utsbn->bucketSpec.metaField());
-                }
             }
             {
                 BSONArrayBuilder fieldsBab{bob->subarrayStart("computedMetaProjFields")};
@@ -315,7 +312,7 @@ void statsToBSON(const QuerySolutionNode* node,
             bob->append("includeMeta", utsbn->includeMeta);
             bob->append("eventFilter",
                         utsbn->eventFilter ? utsbn->eventFilter->serialize() : BSONObj());
-            bob->append("wholeBucketFilter",
+            bob->append("wholebucketFilter",
                         utsbn->wholeBucketFilter ? utsbn->wholeBucketFilter->serialize()
                                                  : BSONObj());
 

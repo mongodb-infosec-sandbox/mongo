@@ -99,7 +99,7 @@ T runWithDeadline(Date_t deadline, F f) {
         return T();
     }
 
-    auto cl = svcCtx->getService()->makeClient("MockGRPCTimer");
+    auto cl = svcCtx->makeClient("MockGRPCTimer");
     AlternativeClientRegion acr(cl);
     auto opCtx = cc().makeOperationContext();
     opCtx->setDeadlineByDate(deadline, ErrorCodes::ExceededTimeLimit);

@@ -15,8 +15,7 @@ let standalone = MongoRunner.runMongod({profile: "0"});
 let db = standalone.getDB("profile_interrupted_op");
 assert.commandWorked(db.dropDatabase());
 
-const collName = jsTestName();
-let coll = db.getCollection(collName);
+let coll = db.getCollection("test");
 assert.commandWorked(coll.insert({a: 1}));
 
 //
@@ -34,7 +33,7 @@ standalone = MongoRunner.runMongod(
 // marked as interrupted.
 //
 db = standalone.getDB("profile_interrupted_op");
-coll = db.getCollection(collName);
+coll = db.getCollection("test");
 const err = assert.throws(function() {
     coll.find({
             $where: function() {

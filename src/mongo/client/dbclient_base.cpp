@@ -358,7 +358,7 @@ auth::RunCommandHook DBClientBase::_makeAuthRunCommandHook() {
             if (!status.isOK()) {
                 return status;
             }
-            return Future<BSONObj>::makeReady(ret->getCommandReply());
+            return Future<BSONObj>::makeReady(std::move(ret->getCommandReply()));
         } catch (const DBException& e) {
             return Future<BSONObj>::makeReady(e.toStatus());
         }
@@ -835,7 +835,11 @@ void DBClientBase::dropIndex(const NamespaceString& nss,
 
     BSONObj info;
     if (!runCommand(nss.dbName(), cmdBuilder.obj(), info)) {
-        LOGV2_DEBUG(20118, _logLevel.toInt(), "dropIndex failed", "info"_attr = info);
+        LOGV2_DEBUG(20118,
+                    _logLevel.toInt(),
+                    "dropIndex failed: {info}",
+                    "dropIndex failed",
+                    "info"_attr = info);
         uassert(10007, "dropIndex failed", 0);
     }
 }

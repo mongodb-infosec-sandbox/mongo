@@ -3,13 +3,17 @@
 The new log system adds capability to produce structured logs in the [Relaxed
 Extended JSON 2.0.0][relaxed_json_2] format. The new API requires names to be
 given to variables, forming field names for the variables in structured JSON
-logs. Named variables are called attributes in the log system.
+logs. Named variables are called attributes in the log system. Human readable
+log messages are built with a [libfmt][libfmt] inspired API, where attributes
+are inserted using replacement fields instead of being streamed together using
+the streaming operator `<<`.
 
 # Style guide
 
 ## In general
 
-Log lines are composed primarily of a message (`msg`) and attributes (`attr` fields).
+Log lines are composed primarily of a message (`msg`) and attributes (`attr.*`
+fields).
 
 ## Philosophy
 
@@ -39,9 +43,10 @@ be crafted with care and attention.
 * Avoid unnecessary punctuation, but punctuate between sentences if using 
   multiple sentences
 * Do not conclude with punctuation
-* You may occasionally encounter `msg` strings containing fmt-style
-  `{expr}` braces. These are legacy artifacts and should be rephrased
-  according to these guidelines.
+* For new log messages, do __not__ use a format string/substitution for
+  new log messages
+* For updating existing log messages, provide both a format
+  string/substitution, __and__ a substitution-free message string
 
 ### Attributes (fields in the attr subdocument)
 
@@ -94,7 +99,9 @@ When logging the below information, do so with these specific terms:
 
 ### Examples
 
-- Example 1:
+- For new log lines:
+
+  C++ expression:
 
       LOGV2(1041, "Transition to PRIMARY complete");
 
@@ -102,7 +109,9 @@ When logging the below information, do so with these specific terms:
 
       { ... , "id": 1041, "msg": "Transition to PRIMARY complete", "attr": {} }
 
-- Example 2:
+- Another new log line:
+
+  C++ expression:
 
       LOGV2(1042, "Slow query", "duration"_attr = getDurationMillis());
 
@@ -110,6 +119,21 @@ When logging the below information, do so with these specific terms:
 
       { ..., "id": 1042, "msg": "Slow query", "attr": { "durationMillis": 1000 } }
 
+
+- For updating existing log lines:
+
+  C++ expression:
+
+      LOGV2(1040,
+            "Replica set state transition from {oldState} to {newState} on this node",
+            "Replica set state transition on this node",
+            "oldState"_attr = getOldState(),
+            "newState"_attr = getNewState());
+
+  JSON Output:
+
+      { ..., "id": 1040, "msg": "Replica set state transition on this node",
+          "attr": { "oldState": "SECONARY", "newState": "PRIMARY" } }
 
 - For adding STL containers as dynamic attributes, see
     [RollbackImpl::_summarizeRollback][_summarizeRollback]
@@ -127,14 +151,21 @@ The log system is made available with the following header:
 The macro `MONGO_LOGV2_DEFAULT_COMPONENT` is expanded by all logging macros.
 This configuration macro must expand at their point of use to a `LogComponent`
 expression, which is implicitly attached to the emitted message.  It is
-conventionally defined near the top of a `.cpp` file after headers are included,
-and before any logging macros are invoked. Example:
+conventionally defined near the top of a `.cpp` file before any logging macros
+are invoked. Example:
 
     #define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kDefault
 
 Logging is performed using function style macros:
 
     LOGV2(ID,
+          format-string,
+          "name0"_attr = var0,
+          ...,
+          "nameN"_attr = varN);
+
+    LOGV2(ID,
+          format-string,
           message-string,
           "name0"_attr = var0,
           ...,
@@ -146,6 +177,13 @@ code, using a new ID is strongly advised to avoid any parsing ambiguity. When
 selecting ID during work on JIRA ticket `SERVER-ABCDE` you can use the JIRA
 ticket number to avoid ID collisions with other engineers by taking ID from the
 range `ABCDE00` - `ABCDE99`.
+
+The format string contains the description of the log event with libfmt style
+replacement fields optionally embedded within it. The format string must comply
+with the [format syntax][libfmt_syn] from libfmt. The purpose of embedding the
+replacement fields is to be able to create a human readable message used by the
+text output format or a tool that converts JSON logs to a human readable
+format.
 
 Replacement fields are placed in the format string with curly braces `{}`.
 Everything not surrounded with curly braces is part of the message text. Curly
@@ -165,7 +203,15 @@ It is allowed to have more attributes than replacement fields in a log
 statement. However, having fewer attributes than replacement fields is not
 allowed.
 
-The message string must be a compile time constant.
+As shown above there is also an API taking both a format string and a message
+string. This is an API to help with the transition from text output to JSON
+output. JSON logs have no need for embedded replacement fields in the
+description, if written in a short and descriptive manner providing context for
+the attribute names. But a format string may still be needed to provide good
+JSON to human readable text conversion. See the JSON output format and style
+guide below for more information.
+
+Both the format string and the message string must be compile time constants.
 This is to avoid dynamic attribute names in the log output and to be able to
 add compile time verification of log statements in the future. If the string
 needs to be shared with anything else (like constructing a Status object) you
@@ -175,11 +221,20 @@ can use this pattern:
 
 ##### Examples
 
-- No attributes.
+- No replacement fields
 
       LOGV2(1000, "Logging event, no replacement fields is OK");
 
-- Some attributes.
+- With replacement fields.
+
+      const BSONObj& slowOperation = ...;
+      Milliseconds time = ...;
+      LOGV2(1001,
+            "Operation {op} is slow, took: {duration}",
+            "op"_attr = slowOperation,
+            "duration"_attr = time);
+
+- No replacement fields, and unused attributes.
 
       LOGV2(1002,
             "Replication state change",
@@ -252,10 +307,11 @@ integer) required to indicate the desired debug level:
 
     Status status = ...;
     int remainingAttempts = ...;
-    LOGV2_ERROR(1004,
-                "Initial sync failed.",
-                "reason"_attr = status,
-                "remainingAttempts"_attr = remainingAttempts);
+    LOGV2_ERROR(
+        1004,
+        "Initial sync failed. {remaining} attempts left. Reason: {reason}",
+        "reason"_attr = status,
+        "remaining"_attr = remainingAttempts);
 
 ### Log Tags
 
@@ -415,23 +471,23 @@ the iterators point to a key-value pair.
 
       std::array<int, 20> arrayOfInts = ...;
       LOGV2(1010,
-            "Log container directly",
+            "Log container directly: {values}",
             "values"_attr = arrayOfInts);
       LOGV2(1011,
-            "Log iterator range",
+            "Log iterator range: {values}",
             "values"_attr = seqLog(arrayOfInts.begin(), arrayOfInts.end());
       LOGV2(1012,
-            "Log first five elements",
+            "Log first five elements: {values}",
             "values"_attr = seqLog(arrayOfInts.data(), arrayOfInts.data() + 5);
 
 - Logging a map-like container:
 
       StringMap<BSONObj> bsonMap = ...;
       LOGV2(1013,
-            "Log map directly",
+            "Log map directly: {values}",
             "values"_attr = bsonMap);
       LOGV2(1014,
-            "Log map iterator range",
+            "Log map iterator range: {values}",
             "values"_attr = mapLog(bsonMap.begin(), bsonMap.end());
 
 #### Containers and `uint64_t`
@@ -447,11 +503,10 @@ type.
 
     // If we know casting to signed is safe
     auto asSigned = [](uint64_t i) { return static_cast<int64_t>(i); };
-    LOGV2(2000,
-          "As signed array",
-          "values"_attr = seqLog(
-              boost::make_transform_iterator(vec.begin(), asSigned),
-              boost::make_transform_iterator(vec.end(), asSigned)));
+    LOGV2(2000, "As signed array: {values}", "values"_attr = seqLog(
+      boost::make_transform_iterator(vec.begin(), asSigned),
+      boost::make_transform_iterator(vec.end(), asSigned)
+    ));
 
     // Otherwise we can log as any of these types instead of using asSigned
     auto asDecimal128 = [](uint64_t i) { return Decimal128(i); };
@@ -620,7 +675,7 @@ Using a named error code:
     LOGV2_ERROR_OPTIONS(
         1050,
         {UserAssertAfterLog(ErrorCodes::DataCorruptionDetected)},
-        "Data corruption detected",
+        "Data corruption detected for {recordId}",
         "recordId"_attr=RecordId(123456));
 
 Would emit a `uassert` after performing the log that is equivalent to:
@@ -672,7 +727,7 @@ C++ statement:
     std::vector<int> vec = {1, 2, 3};
 
     LOGV2_ERROR(1020,
-                "Example",
+                "Example (b: {bson}), (vec: {vector})",
                 "bson"_attr = builder.obj(),
                 "vector"_attr = vec,
                 "optional"_attr = boost::none);
@@ -687,7 +742,7 @@ Output:
         "c": "NETWORK",
         "ctx": "conn1",
         "id": 23453,
-        "msg": "Example",
+        "msg": "Example (b: {bson}), (vec: {vector})",
         "attr": {
             "bson": {
                 "first": 1,
@@ -699,7 +754,35 @@ Output:
     }
 
 
------
+# FAQ
+
+### Why are we doing this?
+
+Structured logging brings __significant__ potential for log analysis to the
+codebase that isn't present with earlier logging facilities. This is an
+improvement that facilitates many future improvements.
+
+Not only that, logv2 removes most parsing/post-processing concerns for
+automated downstream consumption of logs.
+
+### Why are we doing this so fast?
+
+Maintaining multiple output formats for even a single version would present
+serious overhead for both support and engineering. This dual support would last
+for years given the adoption curve, and effectively creates __four__ formats
+(old, new, new-old, and newer).
+
+By making a full cutover in a single release, we are in a much better position.
+
+### Why shouldn't we use formatting strings and substitution for new log lines?
+
+Human readability suffers significantly when `attr` field names are included
+both in the `attr` subdocument and within `msg` string. This is a powerful
+feature that we don't want to exclude entirely, but it makes sense to lean on
+it only when absolutely necessary.
+
 [relaxed_json_2]: https://github.com/mongodb/specifications/blob/master/source/extended-json.rst
+[libfmt]: https://fmt.dev/7.1.3/index.html
+[libfmt_syn]: https://fmt.dev/7.1.3/syntax.html#formatspec
 [_lastOplogEntryFetcherCallbackForStopTimestamp]: https://github.com/mongodb/mongo/blob/13caf3c499a22c2274bd533043eb7e06e6f8e8a4/src/mongo/db/repl/initial_syncer.cpp#L1500-L1512
 [_summarizeRollback]: https://github.com/mongodb/mongo/blob/13caf3c499a22c2274bd533043eb7e06e6f8e8a4/src/mongo/db/repl/rollback_impl.cpp#L1263-L1305

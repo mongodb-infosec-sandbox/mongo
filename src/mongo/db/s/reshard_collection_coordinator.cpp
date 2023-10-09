@@ -60,7 +60,6 @@
 #include "mongo/db/repl/optime.h"
 #include "mongo/db/s/forwardable_operation_metadata.h"
 #include "mongo/db/s/reshard_collection_coordinator.h"
-#include "mongo/db/s/resharding/resharding_util.h"
 #include "mongo/db/server_options.h"
 #include "mongo/db/service_context.h"
 #include "mongo/db/storage/write_unit_of_work.h"
@@ -175,7 +174,7 @@ ExecutorFuture<void> ReshardCollectionCoordinator::_runImpl(
             configsvrReshardCollection.setReshardingUUID(_doc.getReshardingUUID());
 
             auto provenance = _doc.getProvenance();
-            if (resharding::isMoveCollection(provenance)) {
+            if (provenance && provenance.get() == ProvenanceEnum::kMoveCollection) {
                 uassert(ErrorCodes::NamespaceNotFound,
                         str::stream()
                             << "MoveCollection can only be called on an unsharded collection.",

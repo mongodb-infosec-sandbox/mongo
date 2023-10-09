@@ -61,7 +61,7 @@ TEST(AsioTransportLayer, HTTPRequestGetsHTTPError) {
     asio::ip::tcp::resolver resolver(ioContext);
     asio::ip::tcp::socket socket(ioContext);
 
-    LOGV2(23028, "Connecting to server", "server"_attr = server);
+    LOGV2(23028, "Connecting to {server}", "Connecting to server", "server"_attr = server);
     auto resolverIt = resolver.resolve(server.host(), std::to_string(server.port()));
     asio::connect(socket, resolverIt);
 
@@ -80,7 +80,10 @@ TEST(AsioTransportLayer, HTTPRequestGetsHTTPError) {
     auto size = asio::read(socket, asio::buffer(httpRespBuf.data(), httpRespBuf.size()), ec);
     StringData httpResp(httpRespBuf.data(), size);
 
-    LOGV2(23031, "Received http response", "response"_attr = httpResp);
+    LOGV2(23031,
+          "Received http response: {response}",
+          "Received http response",
+          "response"_attr = httpResp);
     ASSERT_TRUE(httpResp.startsWith("HTTP/1.0 200 OK"));
 
 // Why oh why can't ASIO unify their error codes
@@ -132,7 +135,7 @@ TEST(AsioTransportLayer, ShortReadsAndWritesWork) {
 
     assertOK(handle->runCommandRequest(ecr).get());
 
-    auto client = sc->getService()->makeClient(__FILE__);
+    auto client = sc->makeClient(__FILE__);
     auto opCtx = client->makeOperationContext();
 
     handle->runCommandRequest(ecr, opCtx->getBaton()).get(opCtx.get());

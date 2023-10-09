@@ -19,8 +19,7 @@ let primary = rst.getPrimary();
 let db = primary.getDB(dbName);
 
 // Create a TTL index.
-const collName = jsTestName();
-db.getCollection(collName).createIndex({x: 1}, {expireAfterSeconds: 3600});
+db.getCollection("test").createIndex({x: 1}, {expireAfterSeconds: 3600});
 
 function getNumTTLPasses() {
     let serverStatus = assert.commandWorked(primary.adminCommand({serverStatus: 1}));

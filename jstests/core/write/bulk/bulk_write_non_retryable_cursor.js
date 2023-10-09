@@ -11,6 +11,8 @@
  *   command_not_supported_in_serverless,
  *   # TODO SERVER-52419 Remove this tag.
  *   featureFlagBulkWriteCommand,
+ *   # TODO SERVER-79506 Remove this tag.
+ *   assumes_unsharded_collection,
  * ]
  */
 import {cursorEntryValidator} from "jstests/libs/bulk_write_utils.js";
@@ -75,19 +77,16 @@ res = db.adminCommand({
         {insert: 0, document: {_id: 1, skey: "MongoDB2"}},
         {
             update: 0,
-            // TODO SERVER-81952: Remove shard key from the filter
-            filter: {_id: 0, $expr: {$eq: ["$skey", "$$targetKey1"]}},
+            filter: {$expr: {$eq: ["$skey", "$$targetKey1"]}},
             updateMods: [{$set: {skey: "$$replacedKey1"}}],
             constants: {replacedKey1: "MongoDB4"}
         },
         {
             update: 0,
-            // TODO SERVER-81952: Remove shard key from the filter
-            filter: {_id: 1, $expr: {$eq: ["$skey", "$$targetKey2"]}},
+            filter: {$expr: {$eq: ["$skey", "$$targetKey2"]}},
             updateMods: [{$set: {skey: "MongoDB"}}]
         },
-        // TODO SERVER-81952: Remove shard key from the filter
-        {delete: 0, filter: {_id: 0, $expr: {$eq: ["$skey", "$$replacedKey2"]}}}
+        {delete: 0, filter: {$expr: {$eq: ["$skey", "$$replacedKey2"]}}}
     ],
     nsInfo: [{ns: "test.coll"}],
     let : {

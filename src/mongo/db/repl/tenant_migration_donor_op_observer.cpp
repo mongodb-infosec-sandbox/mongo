@@ -185,7 +185,7 @@ void onTransitionToAborted(OperationContext* opCtx,
  */
 class TenantMigrationDonorCommitOrAbortHandler final : public RecoveryUnit::Change {
 public:
-    TenantMigrationDonorCommitOrAbortHandler(TenantMigrationDonorDocument donorStateDoc)
+    TenantMigrationDonorCommitOrAbortHandler(const TenantMigrationDonorDocument donorStateDoc)
         : _donorStateDoc(std::move(donorStateDoc)) {}
 
     void commit(OperationContext* opCtx, boost::optional<Timestamp>) override {

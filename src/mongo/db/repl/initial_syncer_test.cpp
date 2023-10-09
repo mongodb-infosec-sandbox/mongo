@@ -976,6 +976,7 @@ TEST_F(InitialSyncerTest,
     // Check number of failed attempts in stats.
     auto progress = initialSyncer->getInitialSyncProgress();
     LOGV2(24166,
+          "Progress after {initialSyncMaxAttempts} failed attempts: {progress}",
           "Progress after initialSyncMaxAttempts failed attempts",
           "initialSyncMaxAttempts"_attr = initialSyncMaxAttempts,
           "progress"_attr = progress);

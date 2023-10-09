@@ -100,8 +100,7 @@ public:
                 5748800, "_configsvrRemoveTags must be run as a retryable write", txnParticipant);
 
             {
-                auto newClient =
-                    opCtx->getServiceContext()->getService()->makeClient("RemoveTagsMetadata");
+                auto newClient = opCtx->getServiceContext()->makeClient("RemoveTagsMetadata");
                 AlternativeClientRegion acr(newClient);
                 auto executor =
                     Grid::get(opCtx->getServiceContext())->getExecutorPool()->getFixedExecutor();

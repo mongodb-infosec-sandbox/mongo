@@ -127,12 +127,6 @@ transaction::try_rollback(const std::string &config)
 }
 
 int64_t
-transaction::get_op_count() const
-{
-    return _op_count;
-}
-
-int64_t
 transaction::get_target_op_count() const
 {
     return _target_op_count;

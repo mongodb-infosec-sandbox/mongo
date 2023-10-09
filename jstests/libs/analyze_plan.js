@@ -59,12 +59,13 @@ export function getWinningPlan(queryPlanner) {
 export function getWinningPlanFromExplain(explain) {
     if (explain.hasOwnProperty("shards")) {
         for (const shardName in explain.shards) {
-            let queryPlanner = getQueryPlanner(explain.shards[shardName]);
-            return getWinningPlan(queryPlanner);
+            getWinningPlan(explain.shards[shardName].stages[0]["$cursor"].queryPlanner);
         }
     }
 
-    let queryPlanner = getQueryPlanner(explain);
+    const queryPlanner = explain.hasOwnProperty("queryPlanner)")
+        ? explain.queryPlanner
+        : explain.stages[0].$cursor.queryPlanner;
     return getWinningPlan(queryPlanner);
 }
 
@@ -696,70 +697,10 @@ export function assertFetchFilter({coll, predicate, expectedFilter, nReturned}) 
 }
 
 /**
- * Asserts that a pipeline runs with the engine that is passed in as a parameter.
+ * Assert that a pipeline runs with the engine that is passed in as a parameter.
  */
 export function assertEngine(pipeline, engine, coll) {
     const explain = coll.explain().aggregate(pipeline);
     assert(explain.hasOwnProperty("explainVersion"), explain);
     assert.eq(explain.explainVersion, engine === "sbe" ? "2" : "1", explain);
-}
-
-/**
- * Checks whether the explain output has a descendant with the given field.
- * Return true if there is such a stage anywhere in the hierarchy of the explain output.
- */
-function explainHasDescendant(explain, field) {
-    if (explain.hasOwnProperty("stages")) {
-        for (let j = 0; j < explain.stages.length; j++) {
-            let stageName = Object.keys(explain.stages[j]);
-            if (explainHasDescendant(explain.stages[j][stageName], field)) {
-                return true;
-            }
-        }
-    }
-
-    if (explain.hasOwnProperty("queryPlanner")) {
-        return explainHasDescendant(explain.queryPlanner, field);
-    }
-
-    if (explain.hasOwnProperty("winningPlan")) {
-        return explainHasDescendant(explain.winningPlan, field);
-    }
-
-    if (explain.hasOwnProperty(field)) {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Recognizes the query engine used by the query (sbe/classic).
- */
-export function getEngine(explain) {
-    if (explain.hasOwnProperty("explainVersion")) {
-        switch (explain.explainVersion) {
-            case "1":
-                return "classic";
-            case "2":
-                return "sbe";
-        }
-    }
-
-    if (explain.hasOwnProperty("shards")) {
-        for (const shardName in explain.shards) {
-            return getEngine(explain.shards[shardName]);
-        }
-    }
-
-    // there are cases where explain outputs does not provide "explainVersion"
-    let hasSbePlan = explainHasDescendant(explain, "slotBasedPlan");
-
-    const winningPlan = getWinningPlanFromExplain(explain);
-    let propertyExists = winningPlan.hasOwnProperty("queryPlan");
-
-    if (propertyExists || hasSbePlan) {
-        return "sbe"
-    } else {
-        return "classic";
-    }
 }

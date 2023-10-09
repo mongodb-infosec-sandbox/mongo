@@ -278,7 +278,10 @@ public:
         Status const status = mdm->startCommit(sessionId);
         mdm->report(result, opCtx, false);
         if (!status.isOK()) {
-            LOGV2(22014, "_recvChunkCommit failed", "error"_attr = redact(status));
+            LOGV2(22014,
+                  "_recvChunkCommit failed: {error}",
+                  "_recvChunkCommit failed",
+                  "error"_attr = redact(status));
             uassertStatusOK(status);
         }
         return true;
@@ -335,7 +338,10 @@ public:
             Status const status = mdm->abort(migrationSessionIdStatus.getValue());
             mdm->report(result, opCtx, false);
             if (!status.isOK()) {
-                LOGV2(22015, "_recvChunkAbort failed", "error"_attr = redact(status));
+                LOGV2(22015,
+                      "_recvChunkAbort failed: {error}",
+                      "_recvChunkAbort failed",
+                      "error"_attr = redact(status));
                 uassertStatusOK(status);
             }
         } else if (migrationSessionIdStatus == ErrorCodes::NoSuchKey) {
@@ -396,7 +402,10 @@ public:
         const auto mdm = MigrationDestinationManager::get(opCtx);
         const auto status = mdm->exitCriticalSection(opCtx, sessionId);
         if (!status.isOK()) {
-            LOGV2(5899109, "_recvChunkReleaseCritSec failed", "error"_attr = redact(status));
+            LOGV2(5899109,
+                  "_recvChunkReleaseCritSec failed: {error}",
+                  "_recvChunkReleaseCritSec failed",
+                  "error"_attr = redact(status));
             uassertStatusOK(status);
         }
         return true;

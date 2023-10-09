@@ -193,7 +193,8 @@ void DatabaseImpl::init(OperationContext* const opCtx) {
     Status status = validateDBName(_name);
 
     if (!status.isOK()) {
-        LOGV2_WARNING(20325, "Tried to open invalid db", logAttrs(_name));
+        LOGV2_WARNING(
+            20325, "tried to open invalid db: {name}", "Tried to open invalid db", logAttrs(_name));
         uasserted(10028, status.toString());
     }
 
@@ -364,6 +365,7 @@ void DatabaseImpl::getStats(OperationContext* opCtx,
             output->setFsUsedSize(-1);
             output->setFsTotalSize(-1);
             LOGV2(20312,
+                  "Failed to query filesystem disk stats (code: {ec_value}): {ec_message}",
                   "Failed to query filesystem disk stats",
                   "error"_attr = ec.message(),
                   "errorCode"_attr = ec.value());
@@ -412,7 +414,7 @@ Status DatabaseImpl::dropCollectionEvenIfSystem(OperationContext* opCtx,
                                                 bool markFromMigrate) const {
     invariant(opCtx->lockState()->isCollectionLockedForMode(nss, MODE_X));
 
-    LOGV2_DEBUG(20313, 1, "dropCollection", logAttrs(nss));
+    LOGV2_DEBUG(20313, 1, "dropCollection: {namespace}", "dropCollection", logAttrs(nss));
 
     // A valid 'dropOpTime' is not allowed when writes are replicated.
     if (!dropOpTime.isNull() && opCtx->writesAreReplicated()) {
@@ -470,6 +472,9 @@ Status DatabaseImpl::dropCollectionEvenIfSystem(OperationContext* opCtx,
 
         auto commitTimestamp = opCtx->recoveryUnit()->getCommitTimestamp();
         LOGV2(20314,
+              "dropCollection: {namespace} ({uuid}) - storage engine will take ownership of "
+              "drop-pending "
+              "collection with optime {dropOpTime} and commit timestamp {commitTimestamp}",
               "dropCollection: storage engine will take ownership of drop-pending "
               "collection",
               logAttrs(nss),
@@ -531,6 +536,9 @@ Status DatabaseImpl::dropCollectionEvenIfSystem(OperationContext* opCtx,
     auto dpns = nss.makeDropPendingNamespace(dropOpTime);
     const bool stayTemp = true;
     LOGV2(20315,
+          "dropCollection: {namespace} ({uuid}) - renaming to drop-pending collection: "
+          "{dropPendingName} with drop "
+          "optime {dropOpTime}",
           "dropCollection: renaming to drop-pending collection",
           logAttrs(nss),
           "uuid"_attr = uuid,
@@ -569,7 +577,12 @@ Status DatabaseImpl::_finishDropCollection(OperationContext* opCtx,
     // Reduce log verbosity for virtual collections
     auto debugLevel = collection->getSharedIdent() ? 0 : 1;
 
-    LOGV2_DEBUG(20318, debugLevel, "Finishing collection drop", logAttrs(nss), "uuid"_attr = uuid);
+    LOGV2_DEBUG(20318,
+                debugLevel,
+                "Finishing collection drop for {namespace} ({uuid}).",
+                "Finishing collection drop",
+                logAttrs(nss),
+                "uuid"_attr = uuid);
 
     // A virtual collection does not have a durable catalog entry.
     if (auto sharedIdent = collection->getSharedIdent()) {
@@ -612,6 +625,7 @@ Status DatabaseImpl::renameCollection(OperationContext* opCtx,
     assertNoMovePrimaryInProgress(opCtx, fromNss);
 
     LOGV2(20319,
+          "renameCollection: renaming collection {collToRename_uuid} from {fromNss} to {toNss}",
           "renameCollection",
           "uuid"_attr = collToRename->uuid(),
           "fromName"_attr = fromNss,
@@ -688,7 +702,12 @@ Status DatabaseImpl::createView(OperationContext* opCtx,
                                                            options.collation);
     }
 
-    audit::logCreateView(opCtx->getClient(), viewName, viewOnNss, pipeline, status.code());
+    audit::logCreateView(
+        opCtx->getClient(),
+        viewName,
+        NamespaceStringUtil::serialize(viewOnNss, SerializationContext::stateDefault()),
+        pipeline,
+        status.code());
     return status;
 }
 
@@ -792,6 +811,8 @@ Collection* DatabaseImpl::_createCollection(
 
     LOGV2_DEBUG(20320,
                 debugLevel,
+                "createCollection: {namespace} with {generatedUUID_generated_provided} UUID: "
+                "{optionsWithUUID_uuid_get} and options: {options}",
                 "createCollection",
                 logAttrs(nss),
                 "uuidDisposition"_attr = (generatedUUID ? "generated" : "provided"),

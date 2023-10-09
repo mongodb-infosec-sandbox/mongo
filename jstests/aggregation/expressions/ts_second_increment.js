@@ -4,8 +4,7 @@ var testDB = db.getSiblingDB("expression_ts_second_increment");
 
 assert.commandWorked(testDB.dropDatabase());
 
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 
 assert.commandWorked(
     coll.insert({_id: 0, bsonTime: Timestamp(1622731060, 10), invalidBsonTime: 1622731060}));

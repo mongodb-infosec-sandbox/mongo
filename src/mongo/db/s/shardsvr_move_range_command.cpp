@@ -176,6 +176,7 @@ public:
                             } catch (const DBException& e) {
                                 status = e.toStatus();
                                 LOGV2_WARNING(23777,
+                                              "Chunk move failed with {error}",
                                               "Error while doing moveChunk",
                                               "error"_attr = redact(status));
 

@@ -2166,9 +2166,7 @@ private:
         // is responsible for filtering orphans and thus will encounter more documents than its CE
         // indicates. This adjustment allows to prefer plans which perform shard filtering on the
         // index side if possible, resulting in fewer calls to Seek.
-        auto repEst = hasProperty<RepetitionEstimate>(rightPhysPropsLocal)
-            ? getPropertyConst<RepetitionEstimate>(rightPhysPropsLocal).getEstimate()
-            : 1.0;
+        auto repEst = getPropertyConst<RepetitionEstimate>(rightPhysPropsLocal).getEstimate();
         setPropertyOverwrite<RepetitionEstimate>(rightPhysPropsLocal,
                                                  {repEst * kOrphansCardinalityFudgeFactor});
         optimizeRIDIntersectHelper(isIndex,

@@ -713,10 +713,6 @@ public:
             auto cq = parseQueryAndBeginOperation(
                 opCtx, *collectionOrView, nss, _request.body, std::move(findCommand));
 
-            tassert(7922501,
-                    "CanonicalQuery namespace should match catalog namespace",
-                    cq->nss() == nss);
-
             // If we are running a query against a view redirect this query through the aggregation
             // system.
             if (collectionOrView->isView()) {

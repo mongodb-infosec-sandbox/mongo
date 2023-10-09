@@ -70,8 +70,8 @@ void InternalSchemaObjectMatchExpression::debugString(StringBuilder& debug,
 }
 
 void InternalSchemaObjectMatchExpression::appendSerializedRightHandSide(
-    BSONObjBuilder* bob, const SerializationOptions& opts, bool includePath) const {
-    bob->append(kName, _sub->serialize(opts, includePath));
+    BSONObjBuilder* bob, const SerializationOptions& opts) const {
+    bob->append(kName, _sub->serialize(opts));
 }
 
 bool InternalSchemaObjectMatchExpression::equivalent(const MatchExpression* other) const {

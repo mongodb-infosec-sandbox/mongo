@@ -113,7 +113,7 @@ class ReshardingDonorOplogIterTest : public ShardServerTestFixture {
 public:
     repl::MutableOplogEntry makeInsertOplog(Timestamp ts, BSONObj doc) {
         ReshardingDonorOplogId oplogId(ts, ts);
-        return makeOplog(_crudNss, _uuid, repl::OpTypeEnum::kInsert, doc, {}, oplogId);
+        return makeOplog(_crudNss, _uuid, repl::OpTypeEnum::kInsert, std::move(doc), {}, oplogId);
     }
 
     repl::MutableOplogEntry makeFinalOplog(Timestamp ts) {
@@ -186,7 +186,7 @@ public:
         // destructor has run. Otherwise `executor` could end up outliving the ServiceContext and
         // triggering an invariant due to the task executor's thread having a Client still.
         return ExecutorFuture(executor)
-            .then([iter, executor, factory]() mutable {
+            .then([iter, executor, factory] {
                 return iter->getNextBatch(
                     std::move(executor), CancellationToken::uncancelable(), factory);
             })
@@ -195,7 +195,7 @@ public:
     }
 
     ServiceContext::UniqueClient makeKillableClient() {
-        auto client = getServiceContext()->getService()->makeClient("ReshardingDonorOplogIterator");
+        auto client = getServiceContext()->makeClient("ReshardingDonorOplogIterator");
         return client;
     }
 
@@ -286,7 +286,7 @@ TEST_F(ReshardingDonorOplogIterTest, ExhaustWithIncomingInserts) {
         Future<void> awaitInsert(const ReshardingDonorOplogId& lastSeen) override {
             ++numCalls;
 
-            auto client = _serviceContext->getService()->makeClient("onAwaitInsertCalled");
+            auto client = _serviceContext->makeClient("onAwaitInsertCalled");
             AlternativeClientRegion acr(client);
             auto opCtx = cc().makeOperationContext();
             _onAwaitInsertCalled(opCtx.get(), numCalls);

@@ -533,24 +533,24 @@ void HelloResponse::setReplSetVersion(long long version) {
     _setVersion = version;
 }
 
-void HelloResponse::addHost(HostAndPort host) {
+void HelloResponse::addHost(const HostAndPort& host) {
     _hostsSet = true;
-    _hosts.push_back(std::move(host));
+    _hosts.push_back(host);
 }
 
-void HelloResponse::addPassive(HostAndPort passive) {
+void HelloResponse::addPassive(const HostAndPort& passive) {
     _passivesSet = true;
-    _passives.push_back(std::move(passive));
+    _passives.push_back(passive);
 }
 
-void HelloResponse::addArbiter(HostAndPort arbiter) {
+void HelloResponse::addArbiter(const HostAndPort& arbiter) {
     _arbitersSet = true;
-    _arbiters.push_back(std::move(arbiter));
+    _arbiters.push_back(arbiter);
 }
 
-void HelloResponse::setPrimary(HostAndPort primary) {
+void HelloResponse::setPrimary(const HostAndPort& primary) {
     _primarySet = true;
-    _primary = std::move(primary);
+    _primary = primary;
 }
 
 void HelloResponse::setIsArbiterOnly(bool arbiterOnly) {
@@ -587,9 +587,9 @@ void HelloResponse::addTag(const std::string& tagKey, const std::string& tagValu
     _tags[tagKey] = tagValue;
 }
 
-void HelloResponse::setMe(HostAndPort me) {
+void HelloResponse::setMe(const HostAndPort& me) {
     _meSet = true;
-    _me = std::move(me);
+    _me = me;
 }
 
 void HelloResponse::setElectionId(const OID& electionId) {

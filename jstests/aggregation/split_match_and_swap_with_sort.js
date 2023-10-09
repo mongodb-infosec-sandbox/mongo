@@ -13,8 +13,7 @@
 // ]
 import {getAggPlanStage, getPlanStage} from "jstests/libs/analyze_plan.js";
 
-const collName = jsTestName();
-const coll = db.getSiblingDB("split_match_and_swap_with_sort")[collName];
+const coll = db.getSiblingDB("split_match_and_swap_with_sort")["test"];
 coll.drop();
 
 assert.commandWorked(

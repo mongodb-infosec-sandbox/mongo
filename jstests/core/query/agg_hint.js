@@ -15,10 +15,8 @@ import {getAggPlanStage, getPlanStage} from "jstests/libs/analyze_plan.js";
 
 const testDB = db.getSiblingDB("agg_hint");
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName() + "_col"
-const coll = testDB.getCollection(collName);
-const viewName = jsTestName() + "_view"
-const view = testDB.getCollection(viewName);
+const coll = testDB.getCollection("test");
+const view = testDB.getCollection("view");
 
 function confirmWinningPlanUsesExpectedIndex(
     explainResult, expectedKeyPattern, stageName, pipelineOptimizedAway) {
@@ -80,7 +78,7 @@ for (let i = 0; i < 5; ++i) {
 }
 
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: 3}}],
     hintKeyPattern: "x_1",
     expectedKeyPattern: {x: 1},
@@ -102,20 +100,20 @@ for (let i = 0; i < 5; ++i) {
 }
 
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: 3}}],
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: 3}}],
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: 3}}],
     hintKeyPattern: {_id: 1},
     expectedKeyPattern: {_id: 1},
@@ -133,20 +131,20 @@ for (let i = 0; i < 5; ++i) {
 }
 
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$sort: {y: 1}}],
     expectedKeyPattern: {y: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$sort: {y: 1}}],
     hintKeyPattern: {y: 1},
     expectedKeyPattern: {y: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$sort: {y: 1}}],
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1}
@@ -163,20 +161,20 @@ for (let i = 0; i < 5; ++i) {
 }
 
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$project: {x: 1, y: 1, _id: 0}}],
     expectedKeyPattern: {x: 1, y: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$project: {x: 1, y: 1, _id: 0}}],
     hintKeyPattern: {x: 1, y: 1},
     expectedKeyPattern: {x: 1, y: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: coll.getName(),
+    collName: "test",
     aggPipeline: [{$match: {x: {$gte: 0}}}, {$project: {x: 1, y: 1, _id: 0}}],
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1}
@@ -189,23 +187,23 @@ assert.commandWorked(coll.createIndex({x: 1}));
 for (let i = 0; i < 5; ++i) {
     assert.commandWorked(coll.insert({x: i}));
 }
-assert.commandWorked(testDB.createView(viewName, collName, [{$match: {x: {$gte: 0}}}]));
+assert.commandWorked(testDB.createView("view", "test", [{$match: {x: {$gte: 0}}}]));
 
 confirmAggUsesIndex({
-    collName: view.getName(),
+    collName: "view",
     aggPipeline: [{$match: {x: 3}}],
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: view.getName(),
+    collName: "view",
     aggPipeline: [{$match: {x: 3}}],
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmAggUsesIndex({
-    collName: view.getName(),
+    collName: "view",
     aggPipeline: [{$match: {x: 3}}],
     hintKeyPattern: {_id: 1},
     expectedKeyPattern: {_id: 1},
@@ -219,21 +217,21 @@ assert.commandWorked(coll.createIndex({x: 1}));
 for (let i = 0; i < 5; ++i) {
     assert.commandWorked(coll.insert({x: i}));
 }
-assert.commandWorked(testDB.createView(viewName, collName, []));
+assert.commandWorked(testDB.createView("view", "test", []));
 
 confirmCommandUsesIndex({
-    command: {find: view.getName(), filter: {x: 3}},
+    command: {find: "view", filter: {x: 3}},
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmCommandUsesIndex({
-    command: {find: view.getName(), filter: {x: 3}},
+    command: {find: "view", filter: {x: 3}},
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1},
     pipelineOptimizedAway: true
 });
 confirmCommandUsesIndex({
-    command: {find: view.getName(), filter: {x: 3}},
+    command: {find: "view", filter: {x: 3}},
     hintKeyPattern: {_id: 1},
     expectedKeyPattern: {_id: 1},
     pipelineOptimizedAway: true
@@ -246,21 +244,18 @@ assert.commandWorked(coll.createIndex({x: 1}));
 for (let i = 0; i < 5; ++i) {
     assert.commandWorked(coll.insert({x: i}));
 }
-assert.commandWorked(testDB.createView(viewName, collName, []));
+assert.commandWorked(testDB.createView("view", "test", []));
 
+confirmCommandUsesIndex(
+    {command: {count: "view", query: {x: 3}}, expectedKeyPattern: {x: 1}, stageName: "COUNT_SCAN"});
 confirmCommandUsesIndex({
-    command: {count: view.getName(), query: {x: 3}},
-    expectedKeyPattern: {x: 1},
-    stageName: "COUNT_SCAN"
-});
-confirmCommandUsesIndex({
-    command: {count: view.getName(), query: {x: 3}},
+    command: {count: "view", query: {x: 3}},
     hintKeyPattern: {x: 1},
     expectedKeyPattern: {x: 1},
     stageName: "COUNT_SCAN"
 });
 confirmCommandUsesIndex({
-    command: {count: view.getName(), query: {x: 3}},
+    command: {count: "view", query: {x: 3}},
     hintKeyPattern: {_id: 1},
     expectedKeyPattern: {_id: 1}
 });

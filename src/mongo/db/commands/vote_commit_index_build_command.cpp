@@ -94,6 +94,8 @@ public:
             const auto& cmd = request();
             LOGV2_DEBUG(3856208,
                         1,
+                        "Received voteCommitIndexBuild request for index build: {buildUUID}, "
+                        "from host: {host}",
                         "Received voteCommitIndexBuild request",
                         "buildUUID"_attr = cmd.getCommandParameter(),
                         "host"_attr = cmd.getHostAndPort().toString());

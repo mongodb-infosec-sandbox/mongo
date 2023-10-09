@@ -176,11 +176,6 @@ public:
     virtual bool encodeSearchForSbeCache(DocumentSource* ds, BufBuilder* bufBuilder) {
         return false;
     }
-
-    virtual boost::optional<CursorResponse> establishSearchMetaCursor(
-        const boost::intrusive_ptr<ExpressionContext>& expCtx, const SearchNode* node) {
-        return boost::none;
-    }
 };
 
 /**

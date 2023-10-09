@@ -151,6 +151,7 @@ ServiceContext::~ServiceContext() {
     stdx::lock_guard<Latch> lk(_mutex);
     for (const auto& client : _clients) {
         LOGV2_ERROR(23828,
+                    "{client} exists while destroying {serviceContext}",
                     "Non-empty client list when destroying service context",
                     "client"_attr = client->desc(),
                     "serviceContext"_attr = reinterpret_cast<uint64_t>(this));
@@ -224,6 +225,11 @@ void onCreate(T* object, const ObserversContainer& observers) {
 }
 
 }  // namespace
+
+ServiceContext::UniqueClient ServiceContext::makeClient(
+    std::string desc, std::shared_ptr<transport::Session> session) {
+    return getService()->makeClient(std::move(desc), std::move(session));
+}
 
 ServiceContext::UniqueClient ServiceContext::makeClientForService(
     std::string desc, std::shared_ptr<transport::Session> session, Service* service) {

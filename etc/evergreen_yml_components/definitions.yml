@@ -76,31 +76,6 @@ modules:
   prefix: src/third_party
   branch: develop
 
-- name: dsi
-  repo: git@github.com:10gen/dsi.git
-  prefix: ${workdir}/src
-  branch: master
-- name: genny
-  repo: git@github.com:10gen/genny.git
-  prefix: ${workdir}/src
-  branch: master
-- name: workloads
-  repo: git@github.com:10gen/workloads.git
-  prefix: ${workdir}/src
-  branch: master
-- name: YCSB
-  repo: git@github.com:mongodb-labs/YCSB.git
-  prefix: ${workdir}/src
-  branch: production
-- name: flamegraph
-  repo: git@github.com:mongodb-forks/flamegraph.git
-  prefix: ${workdir}/src
-  branch: master
-- name: PrivateWorkloads
-  repo: git@github.com:10gen/PrivateWorkloads.git
-  prefix: ${workdir}/src
-  branch: production
-
 #######################################
 #             Variable                #
 #######################################
@@ -473,11 +448,6 @@ functions:
       revisions: # for each module include revision as <module_name> : ${<module_name>_rev}
         enterprise: ${enterprise_rev}
         wtdevelop: ${wtdevelop_rev}
-        dsi: ${dsi_rev}
-        genny: ${genny_rev}
-        workloads: ${workloads_rev}
-        YCSB: ${YCSB_rev}
-        flamegraph: ${flamegraph_rev}
 
   # Get get the mongo repo, no modules. Useful for inspecting the commit history with the
   # `git` Python tool.
@@ -3344,7 +3314,6 @@ tasks:
     vars:
       suite: pretty-printer-tests
       install_dir: build/install/dist-test/bin
-      exec_timeout_secs: 1800 # 30 min timeout.
 
 
 ## run_unittests with UndoDB live-record ##
@@ -4346,21 +4315,20 @@ tasks:
       suite: generational_fuzzer
       resmoke_args: "--mongodSetParameters='{logComponentVerbosity: {command: 2}}'"
 
-# Disabled under SERVER-81088
-# ## Standalone fuzzer for checking columnstore index correctness ##
-# - <<: *jstestfuzz_template
-#   name: aggregation_columnstore_fuzzer_gen
-#   tags: ["aggfuzzer", "common", "columnstore", "require_npm", "random_name", "sbe_only", "feature_flag_guarded"]
-#   commands:
-#   - func: "generate resmoke tasks"
-#     vars:
-#       <<: *jstestfuzz_config_vars
-#       num_files: 5
-#       num_tasks: 5
-#       jstestfuzz_vars: --diffTestingMode columnstore
-#       npm_command: agg-fuzzer
-#       suite: generational_fuzzer
-#       resmoke_args: "--mongodSetParameters='{logComponentVerbosity: {command: 2}}'"
+## Standalone fuzzer for checking columnstore index correctness ##
+- <<: *jstestfuzz_template
+  name: aggregation_columnstore_fuzzer_gen
+  tags: ["aggfuzzer", "common", "columnstore", "require_npm", "random_name", "sbe_only", "feature_flag_guarded"]
+  commands:
+  - func: "generate resmoke tasks"
+    vars:
+      <<: *jstestfuzz_config_vars
+      num_files: 5
+      num_tasks: 5
+      jstestfuzz_vars: --diffTestingMode columnstore
+      npm_command: agg-fuzzer
+      suite: generational_fuzzer
+      resmoke_args: "--mongodSetParameters='{logComponentVerbosity: {command: 2}}'"
 
 ## Standalone fuzzer for checking timeseries optimizations correctness ##
 - <<: *jstestfuzz_template
@@ -6439,7 +6407,7 @@ tasks:
   - func: "run tests"
 
 - <<: *task_template
-  name: query_stats_aggregation_passthrough
+  name: query_stats_passthrough_writeonly
   tags: []
   commands:
   - func: "do setup"
@@ -6447,13 +6415,6 @@ tasks:
 
 - <<: *task_template
   name: query_stats_mongos_passthrough
-  tags: []
-  commands:
-  - func: "do setup"
-  - func: "run tests"
-
-- <<: *task_template
-  name: query_stats_mongos_aggregation_passthrough
   tags: []
   commands:
   - func: "do setup"
@@ -8756,15 +8717,6 @@ tasks:
   - func: "generate resmoke tasks"
     vars:
       suite: cqf_experimental_no_passthrough
-      use_large_distro: "true"
-
-- <<: *gen_task_template
-  name: cqf_experimental_sharding_passthrough_gen
-  tags: [cqf]
-  commands:
-  - func: "generate resmoke tasks"
-    vars:
-      suite: cqf_experimental_sharding_passthrough
       use_large_distro: "true"
 
 - <<: *task_template

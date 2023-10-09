@@ -629,6 +629,8 @@ void MigrationSourceManager::commitChunkMetadataOnConfig() {
 
 
     LOGV2(22018,
+          "Migration succeeded and updated collection placement version to "
+          "{updatedCollectionPlacementVersion}",
           "Migration succeeded and updated collection placement version",
           "updatedCollectionPlacementVersion"_attr = refreshedMetadata.getCollPlacementVersion(),
           "migrationId"_attr = _coordinator->getMigrationId());
@@ -673,6 +675,8 @@ void MigrationSourceManager::commitChunkMetadataOnConfig() {
 
     if (_args.getWaitForDelete()) {
         LOGV2(22019,
+              "Waiting for migration cleanup after chunk commit for the namespace {namespace} "
+              "and range {range}",
               "Waiting for migration cleanup after chunk commit",
               logAttrs(nss()),
               "range"_attr = redact(range.toString()),
@@ -802,8 +806,7 @@ void MigrationSourceManager::_cleanup(bool completeMigration) noexcept {
                 _coordinator->setMigrationDecision(DecisionEnum::kAborted);
             }
 
-            auto newClient =
-                _opCtx->getServiceContext()->getService()->makeClient("MigrationCoordinator");
+            auto newClient = _opCtx->getServiceContext()->makeClient("MigrationCoordinator");
             AlternativeClientRegion acr(newClient);
             auto newOpCtxPtr = cc().makeOperationContext();
             auto newOpCtx = newOpCtxPtr.get();
@@ -832,6 +835,8 @@ void MigrationSourceManager::_cleanup(bool completeMigration) noexcept {
         _state = kDone;
     } catch (const DBException& ex) {
         LOGV2_WARNING(5089001,
+                      "Failed to complete the migration {migrationId} with "
+                      "{chunkMigrationRequestParameters} due to: {error}",
                       "Failed to complete the migration",
                       "chunkMigrationRequestParameters"_attr = redact(_args.toBSON({})),
                       "error"_attr = redact(ex),

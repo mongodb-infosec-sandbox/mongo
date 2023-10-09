@@ -155,8 +155,8 @@ public:
             clients;
         clients.reserve(k);
         for (int i = 0; i < k; ++i) {
-            auto client = getServiceContext()->getService()->makeClient(
-                str::stream() << "test client for thread " << i);
+            auto client =
+                getServiceContext()->makeClient(str::stream() << "test client for thread " << i);
             auto opCtx = client->makeOperationContext();
             client->swapLockState(std::make_unique<LockerImpl>(opCtx->getServiceContext()));
             clients.emplace_back(std::move(client), std::move(opCtx));
@@ -211,7 +211,7 @@ public:
 TEST_F(DConcurrencyTestFixture, WriteConflictRetryInstantiatesOK) {
     auto opCtx = makeOperationContext();
     getClient()->swapLockState(std::make_unique<LockerImpl>(opCtx->getServiceContext()));
-    writeConflictRetry(opCtx.get(), "", NamespaceString::kEmpty, [] {});
+    writeConflictRetry(opCtx.get(), "", NamespaceString(), [] {});
 }
 
 TEST_F(DConcurrencyTestFixture, WriteConflictRetryRetriesFunctionOnWriteConflictException) {
@@ -219,7 +219,7 @@ TEST_F(DConcurrencyTestFixture, WriteConflictRetryRetriesFunctionOnWriteConflict
     getClient()->swapLockState(std::make_unique<LockerImpl>(opCtx->getServiceContext()));
     auto&& opDebug = CurOp::get(opCtx.get())->debug();
     ASSERT_EQUALS(0, opDebug.additiveMetrics.writeConflicts.load());
-    ASSERT_EQUALS(100, writeConflictRetry(opCtx.get(), "", NamespaceString::kEmpty, [&opDebug] {
+    ASSERT_EQUALS(100, writeConflictRetry(opCtx.get(), "", NamespaceString(), [&opDebug] {
                       if (0 == opDebug.additiveMetrics.writeConflicts.load()) {
                           throwWriteConflictException(
                               str::stream()
@@ -236,7 +236,7 @@ TEST_F(DConcurrencyTestFixture, WriteConflictRetryPropagatesNonWriteConflictExce
     getClient()->swapLockState(std::make_unique<LockerImpl>(opCtx->getServiceContext()));
     ASSERT_THROWS_CODE(writeConflictRetry(opCtx.get(),
                                           "",
-                                          NamespaceString::kEmpty,
+                                          NamespaceString(),
                                           [] {
                                               uassert(ErrorCodes::OperationFailed, "", false);
                                               MONGO_UNREACHABLE;
@@ -254,7 +254,7 @@ TEST_F(DConcurrencyTestFixture,
     ASSERT_THROWS(writeConflictRetry(
                       opCtx.get(),
                       "",
-                      NamespaceString::kEmpty,
+                      NamespaceString(),
                       [] {
                           throwWriteConflictException(
                               str::stream() << "Verify that WriteConflictExceptions are propogated "

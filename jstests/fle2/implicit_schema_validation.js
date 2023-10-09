@@ -10,7 +10,6 @@
 import {assertDocumentValidationFailure} from "jstests/libs/doc_validation_utils.js";
 
 const dbTest = db.getSiblingDB('implicit_schema_validation_db');
-const collName = jsTestName();
 
 const validEncryptedString = HexData(6, "060102030405060708091011121314151602");
 const validEncryptedInt = HexData(6, "060102030405060708091011121314151610");
@@ -419,59 +418,59 @@ function positiveUpdateTests(coll, invert = false) {
 }
 
 jsTestLog("test implicit validator only");
-dbTest[collName].drop();
-assert.commandWorked(dbTest.createCollection(collName, {encryptedFields: sampleEncryptedFields}));
-negativeTests(dbTest[collName], false);
-positiveTests(dbTest[collName], false);
+dbTest.test.drop();
+assert.commandWorked(dbTest.createCollection("test", {encryptedFields: sampleEncryptedFields}));
+negativeTests(dbTest.test, false);
+positiveTests(dbTest.test, false);
 
 jsTestLog("test implicit validator with user validator containing query ops");
-dbTest[collName].drop();
+dbTest.test.drop();
 assert.commandWorked(dbTest.createCollection(
-    collName, {encryptedFields: sampleEncryptedFields, validator: userQueryOpSchema}));
-negativeTests(dbTest[collName], true);
-positiveTests(dbTest[collName], true);
+    "test", {encryptedFields: sampleEncryptedFields, validator: userQueryOpSchema}));
+negativeTests(dbTest.test, true);
+positiveTests(dbTest.test, true);
 
 jsTestLog("test implicit validator with user validator containing json schema");
-dbTest[collName].drop();
+dbTest.test.drop();
 assert.commandWorked(dbTest.createCollection(
-    collName, {encryptedFields: sampleEncryptedFields, validator: userJsonSchema}));
-negativeTests(dbTest[collName], true);
-positiveTests(dbTest[collName], true);
+    "test", {encryptedFields: sampleEncryptedFields, validator: userJsonSchema}));
+negativeTests(dbTest.test, true);
+positiveTests(dbTest.test, true);
 
 jsTestLog("test user validator rules conflicting with implicit rules");
-dbTest[collName].drop();
+dbTest.test.drop();
 assert.commandWorked(dbTest.createCollection(
-    collName, {encryptedFields: sampleEncryptedFields, validator: userJsonConflictSchema}));
-negativeTests(dbTest[collName], true);
-positiveTests(dbTest[collName], true, true);
+    "test", {encryptedFields: sampleEncryptedFields, validator: userJsonConflictSchema}));
+negativeTests(dbTest.test, true);
+positiveTests(dbTest.test, true, true);
 
 jsTestLog("test malformed user validator on encrypted collection");
-dbTest[collName].drop();
+dbTest.test.drop();
 assert.commandFailed(dbTest.createCollection(
-    collName, {encryptedFields: sampleEncryptedFields, validator: userMalformedSchema}));
+    "test", {encryptedFields: sampleEncryptedFields, validator: userMalformedSchema}));
 
 jsTestLog("test FLE1 schema validator on Queryable Encryption collection");
-dbTest[collName].drop();
+dbTest.test.drop();
 assert.commandFailedWithCode(
-    dbTest.createCollection(collName,
+    dbTest.createCollection("test",
                             {encryptedFields: sampleEncryptedFields, validator: fle1Schema}),
     ErrorCodes.QueryFeatureNotAllowed);
 
 jsTestLog("test collMod adding user validator on encrypted collection");
-dbTest[collName].drop();
-assert.commandWorked(dbTest.createCollection(collName, {encryptedFields: sampleEncryptedFields}));
-assert.commandWorked(dbTest.runCommand({collMod: collName, validator: userQueryOpSchema}));
-negativeTests(dbTest[collName], true);
-positiveTests(dbTest[collName], true);
+dbTest.test.drop();
+assert.commandWorked(dbTest.createCollection("test", {encryptedFields: sampleEncryptedFields}));
+assert.commandWorked(dbTest.runCommand({collMod: "test", validator: userQueryOpSchema}));
+negativeTests(dbTest.test, true);
+positiveTests(dbTest.test, true);
 
 jsTestLog("test collMod adding FLE1 user validator on encrypted collection");
-dbTest[collName].drop();
-assert.commandWorked(dbTest.createCollection(collName, {encryptedFields: sampleEncryptedFields}));
-assert.commandFailedWithCode(dbTest.runCommand({collMod: collName, validator: fle1Schema}),
+dbTest.test.drop();
+assert.commandWorked(dbTest.createCollection("test", {encryptedFields: sampleEncryptedFields}));
+assert.commandFailedWithCode(dbTest.runCommand({collMod: "test", validator: fle1Schema}),
                              ErrorCodes.QueryFeatureNotAllowed);
 
 jsTestLog("test implicit validation works on updates");
-dbTest[collName].drop();
-assert.commandWorked(dbTest.createCollection(collName, {encryptedFields: sampleEncryptedFields}));
-negativeUpdateTests(dbTest[collName]);
-positiveUpdateTests(dbTest[collName]);
+dbTest.test.drop();
+assert.commandWorked(dbTest.createCollection("test", {encryptedFields: sampleEncryptedFields}));
+negativeUpdateTests(dbTest.test);
+positiveUpdateTests(dbTest.test);

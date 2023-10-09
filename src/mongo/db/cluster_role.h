@@ -37,7 +37,6 @@
 #include <string>
 
 #include "mongo/base/string_data.h"
-#include "mongo/bson/bsontypes.h"
 
 namespace mongo {
 
@@ -91,12 +90,24 @@ private:
     uint8_t _roleMask;
 };
 
-/**
- * Returns a BSON array of strings representing each of the roles in `role`.
- */
-BSONArray toBSON(ClusterRole role);
+inline std::ostream& operator<<(std::ostream& os, ClusterRole r) {
+    static const std::array<std::pair<ClusterRole, StringData>, 3> bitNames{{
+        {ClusterRole::ShardServer, "shard"_sd},
+        {ClusterRole::ConfigServer, "config"_sd},
+        {ClusterRole::RouterServer, "router"_sd},
+    }};
 
-std::ostream& operator<<(std::ostream& os, ClusterRole r);
+    StringData sep;
+    os << "ClusterRole{";
+    for (auto&& [key, name] : bitNames) {
+        if (r.has(key)) {
+            os << sep << name;
+            sep = "|";
+        }
+    }
+    os << "}";
+    return os;
+}
 
 inline std::string toString(ClusterRole r) {
     std::ostringstream os;

@@ -197,7 +197,8 @@ DDLLockManager::ScopedDatabaseDDLLock::ScopedDatabaseDDLLock(OperationContext* o
                                                              const DatabaseName& db,
                                                              StringData reason,
                                                              LockMode mode)
-    : _dbLock{opCtx, opCtx->lockState(), db, reason, mode, true /*waitForRecovery*/} {
+    : DDLLockManager::ScopedBaseDDLLock(
+          opCtx, opCtx->lockState(), db, reason, mode, true /*waitForRecovery*/) {
 
     // Check under the DDL dbLock if this is the primary shard for the database
     DatabaseShardingState::assertIsPrimaryShardForDb(opCtx, db);
@@ -218,14 +219,8 @@ DDLLockManager::ScopedCollectionDDLLock::ScopedCollectionDDLLock(OperationContex
     // Check under the DDL db lock if this is the primary shard for the database
     DatabaseShardingState::assertIsPrimaryShardForDb(opCtx, ns.dbName());
 
-    // Acquire the collection DDL lock.
-    // If the ns represents a timeseries buckets collection, translate to its corresponding view ns.
-    _collLock.emplace(opCtx,
-                      opCtx->lockState(),
-                      ns.isTimeseriesBucketsCollection() ? ns.getTimeseriesViewNamespace() : ns,
-                      reason,
-                      mode,
-                      true /*waitForRecovery*/);
+    // Finally, acquire the collection DDL lock
+    _collLock.emplace(opCtx, opCtx->lockState(), ns, reason, mode, true /*waitForRecovery*/);
 }
 
 DDLLockManager::ScopedBaseDDLLock::ScopedBaseDDLLock(OperationContext* opCtx,

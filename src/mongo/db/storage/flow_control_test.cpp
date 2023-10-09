@@ -68,7 +68,7 @@ public:
         gFlowControlSamplePeriod.store(1);
         flowControl = std::make_unique<FlowControl>(replCoordPtr);
 
-        client = getServiceContext()->getService()->makeClient("FlowControl Client");
+        client = getServiceContext()->makeClient("FlowControl Client");
         opCtx = client->makeOperationContext();
     }
 

@@ -71,7 +71,7 @@ std::string makeSecurityToken(const UserName& userName) {
 class SecurityTokenMetadataTest : public ServiceContextTest {
 protected:
     void setUp() final {
-        client = getServiceContext()->getService()->makeClient("test");
+        client = getServiceContext()->makeClient("test");
     }
 
     ServiceContext::UniqueClient client;

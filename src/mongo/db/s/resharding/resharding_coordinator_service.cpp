@@ -1315,7 +1315,7 @@ void ReshardingCoordinatorService::checkIfConflictsWithOtherInstances(
     const std::vector<const PrimaryOnlyService::Instance*>& existingInstances) {
     auto coordinatorDoc = ReshardingCoordinatorDocument::parse(
         IDLParserContext("ReshardingCoordinatorService::checkIfConflictsWithOtherInstances"),
-        initialState);
+        std::move(initialState));
 
     for (const auto& instance : existingInstances) {
         auto typedInstance = checked_cast<const ReshardingCoordinator*>(instance);
@@ -1371,7 +1371,7 @@ std::shared_ptr<repl::PrimaryOnlyService::Instance> ReshardingCoordinatorService
     return std::make_shared<ReshardingCoordinator>(
         this,
         ReshardingCoordinatorDocument::parse(IDLParserContext("ReshardingCoordinatorStateDoc"),
-                                             initialState),
+                                             std::move(initialState)),
         std::make_shared<ReshardingCoordinatorExternalStateImpl>(),
         _serviceContext);
 }
@@ -2145,7 +2145,7 @@ ExecutorFuture<bool> ReshardingCoordinator::_isReshardingOpRedundant(
                    cm.emplace(cri.cm);
                }
 
-               if (resharding::isMoveCollection(_metadata.getProvenance())) {
+               if (_metadata.getProvenance() == ProvenanceEnum::kMoveCollection) {
                    // Verify if the moveCollection is redundant by checking if the operation is
                    // attempting to move to the same shard.
                    std::set<ShardId> shardIdsSet;
@@ -2512,7 +2512,7 @@ void ReshardingCoordinator::_commit(const ReshardingCoordinatorDocument& coordin
 
         collectionPlacementAsVector.reserve(collectionPlacement.size());
         for (auto& elem : collectionPlacement) {
-            collectionPlacementAsVector.emplace_back(elem);
+            collectionPlacementAsVector.emplace_back(std::move(elem));
         }
         return collectionPlacementAsVector;
     }();

@@ -65,7 +65,9 @@ public:
             opCtx->setWriteConcern(opCtx->getWriteConcern());
 
             audit::logRefineCollectionShardKey(
-                opCtx->getClient(), ns(), request().getKey().toBSON());
+                opCtx->getClient(),
+                NamespaceStringUtil::serialize(ns(), SerializationContext::stateDefault()),
+                request().getKey().toBSON());
 
             ShardingCatalogManager::get(opCtx)->commitRefineCollectionShardKey(
                 opCtx,

@@ -133,18 +133,6 @@ struct MultikeynessTrie {
 };
 
 /**
- * Metadata for indexed field paths. Allows fast index path lookup with an unordered set.
- */
-class IndexedFieldPaths {
-public:
-    void add(const ABT& path);
-    bool isIndexed(const ABT& path) const;
-
-private:
-    IndexPathSet _indexPathSet;
-};
-
-/**
  * Metadata associated with an index. Holds the index specification (index fields and their
  * collations), its version (0 or 1), the collations as a bit mask, multikeyness info, and
  * distribution info. This is a convenient structure for the query planning process.
@@ -253,8 +241,7 @@ public:
                    DistributionAndPaths distributionAndPaths,
                    bool exists,
                    boost::optional<CEType> ce,
-                   ShardingMetadata shardingMetadata,
-                   IndexedFieldPaths indexedFieldPaths);
+                   ShardingMetadata shardingMetadata);
 
     const ScanDefOptions& getOptionsMap() const;
 
@@ -268,8 +255,6 @@ public:
     opt::unordered_map<std::string, IndexDefinition>& getIndexDefs();
 
     const MultikeynessTrie& getMultikeynessTrie() const;
-
-    const IndexedFieldPaths& getIndexedFieldPaths() const;
 
     bool exists() const;
 
@@ -292,8 +277,6 @@ private:
     opt::unordered_map<std::string, IndexDefinition> _indexDefs;
 
     MultikeynessTrie _multikeynessTrie;
-
-    IndexedFieldPaths _indexedFieldPaths;
 
     /**
      * True if the collection exists.

@@ -167,9 +167,6 @@ public:
                 case ProvenanceEnum::kMoveCollection:
                     return ShardingDataTransformCumulativeMetrics::getForMoveCollection(
                         serviceContext);
-                case ProvenanceEnum::kBalancerMoveCollection:
-                    return ShardingDataTransformCumulativeMetrics::getForBalancerMoveCollection(
-                        serviceContext);
                 case ProvenanceEnum::kUnshardCollection:
                     return ShardingDataTransformCumulativeMetrics::getForUnshardCollection(
                         serviceContext);

@@ -148,12 +148,16 @@ void killAllExpiredTransactions(OperationContext* opCtx) {
             // was active and the session kill aborted it.  We still want to log
             // that as aborted due to transactionLifetimeLimitSessions.
             if (txnParticipant.transactionIsInProgress() || txnParticipant.transactionIsAborted()) {
-                LOGV2(20707,
-                      "Aborting transaction because it has been running for longer than "
-                      "'transactionLifetimeLimitSeconds'",
-                      "sessionId"_attr = session.getSessionId().getId(),
-                      "txnNumberAndRetryCounter"_attr =
-                          txnParticipant.getActiveTxnNumberAndRetryCounter());
+                LOGV2(
+                    20707,
+                    "Aborting transaction with session id {sessionId} and txnNumberAndRetryCounter "
+                    "{txnNumberAndRetryCounter}  "
+                    "because it has been running for longer than 'transactionLifetimeLimitSeconds'",
+                    "Aborting transaction because it has been running for longer than "
+                    "'transactionLifetimeLimitSeconds'",
+                    "sessionId"_attr = session.getSessionId().getId(),
+                    "txnNumberAndRetryCounter"_attr =
+                        txnParticipant.getActiveTxnNumberAndRetryCounter());
                 if (txnParticipant.transactionIsInProgress()) {
                     txnParticipant.abortTransaction(opCtx);
                 }
@@ -200,8 +204,7 @@ void killSessionsAbortAllPreparedTransactions(OperationContext* opCtx) {
 
 void yieldLocksForPreparedTransactions(OperationContext* opCtx) {
     // Create a new opCtx because we need an empty locker to refresh the locks.
-    auto newClient =
-        opCtx->getServiceContext()->getService()->makeClient("prepared-txns-yield-locks");
+    auto newClient = opCtx->getServiceContext()->makeClient("prepared-txns-yield-locks");
 
     AlternativeClientRegion acr(newClient);
     auto newOpCtx = cc().makeOperationContext();
@@ -227,6 +230,8 @@ void yieldLocksForPreparedTransactions(OperationContext* opCtx) {
             if (txnParticipant.transactionIsPrepared()) {
                 LOGV2_DEBUG(20708,
                             3,
+                            "Yielding locks of prepared transaction. SessionId: "
+                            "{sessionId} TxnNumberAndRetryCounter: {txnNumberAndRetryCounter}",
                             "Yielding locks of prepared transaction",
                             "sessionId"_attr = session.getSessionId().getId(),
                             "txnNumberAndRetryCounter"_attr =

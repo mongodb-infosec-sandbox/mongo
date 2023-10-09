@@ -104,12 +104,12 @@ void ElemMatchObjectMatchExpression::debugString(StringBuilder& debug, int inden
     _sub->debugString(debug, indentationLevel + 1);
 }
 
-void ElemMatchObjectMatchExpression::appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                                                   const SerializationOptions& opts,
-                                                                   bool includePath) const {
+void ElemMatchObjectMatchExpression::appendSerializedRightHandSide(
+    BSONObjBuilder* bob, const SerializationOptions& opts) const {
     BSONObjBuilder elemMatchBob = bob->subobjStart("$elemMatch");
     SerializationOptions options = opts;
-    _sub->serialize(&elemMatchBob, options, true);
+    options.includePath = true;
+    _sub->serialize(&elemMatchBob, options);
     elemMatchBob.doneFast();
 }
 
@@ -174,13 +174,13 @@ void ElemMatchValueMatchExpression::debugString(StringBuilder& debug, int indent
     }
 }
 
-void ElemMatchValueMatchExpression::appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                                                  const SerializationOptions& opts,
-                                                                  bool includePath) const {
+void ElemMatchValueMatchExpression::appendSerializedRightHandSide(
+    BSONObjBuilder* bob, const SerializationOptions& opts) const {
     BSONObjBuilder emBob = bob->subobjStart("$elemMatch");
     SerializationOptions options = opts;
+    options.includePath = false;
     for (auto&& child : _subs) {
-        child->serialize(&emBob, options, false);
+        child->serialize(&emBob, options);
     }
     emBob.doneFast();
 }
@@ -217,8 +217,7 @@ void SizeMatchExpression::debugString(StringBuilder& debug, int indentationLevel
 }
 
 void SizeMatchExpression::appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                                        const SerializationOptions& opts,
-                                                        bool includePath) const {
+                                                        const SerializationOptions& opts) const {
     opts.appendLiteral(bob, "$size", _size);
 }
 

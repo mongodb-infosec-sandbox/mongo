@@ -267,8 +267,7 @@ database_operation::read_operation(thread_worker *tc)
                     testutil_die(ret, "Unexpected error returned from cursor->next()");
             }
             tc->txn.add_op();
-            if (tc->txn.get_op_count() >= tc->txn.get_target_op_count())
-                tc->txn.rollback();
+            tc->txn.try_rollback();
             tc->sleep();
         }
         /* Reset our cursor to avoid pinning content. */

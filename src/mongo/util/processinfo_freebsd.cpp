@@ -132,6 +132,7 @@ void ProcessInfo::SystemInfo::collectSystemInfo() {
     int status = getSysctlByNameWithDefault("kern.version", std::string("unknown"), &osVersion);
     if (status != 0)
         LOGV2(23332,
+              "Unable to collect OS Version. (errno: {errno} msg: {msg})",
               "Unable to collect OS Version.",
               "errno"_attr = status,
               "msg"_attr = strerror(status));
@@ -139,6 +140,7 @@ void ProcessInfo::SystemInfo::collectSystemInfo() {
     status = getSysctlByNameWithDefault("hw.machine_arch", std::string("unknown"), &cpuArch);
     if (status != 0)
         LOGV2(23333,
+              "Unable to collect Machine Architecture. (errno: {errno} msg: {msg})",
               "Unable to collect Machine Architecture.",
               "errno"_attr = status,
               "msg"_attr = strerror(status));
@@ -151,6 +153,7 @@ void ProcessInfo::SystemInfo::collectSystemInfo() {
     memLimit = memSize;
     if (status != 0)
         LOGV2(23334,
+              "Unable to collect Physical Memory. (errno: {errno} msg: {msg})",
               "Unable to collect Physical Memory.",
               "errno"_attr = status,
               "msg"_attr = strerror(status));
@@ -159,6 +162,7 @@ void ProcessInfo::SystemInfo::collectSystemInfo() {
     numCores = numBuffer;
     if (status != 0)
         LOGV2(23335,
+              "Unable to collect Number of CPUs. (errno: {errno} msg: {msg})",
               "Unable to collect Number of CPUs.",
               "errno"_attr = status,
               "msg"_attr = strerror(status));

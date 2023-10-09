@@ -191,8 +191,7 @@ TEST_F(MigrationBatchFetcherTestFixture, BasicEmptyFetchingTest) {
     ShardId fromShard{"Donor"};
     auto msid = MigrationSessionId::generate(fromShard, "Recipient");
     auto outerOpCtx = operationContext();
-    auto newClient =
-        outerOpCtx->getServiceContext()->getService()->makeClient("MigrationCoordinator");
+    auto newClient = outerOpCtx->getServiceContext()->makeClient("MigrationCoordinator");
 
     int concurrency = 30;
     RAIIServerParameterControllerForTest featureFlagController(
@@ -240,8 +239,7 @@ TEST_F(MigrationBatchFetcherTestFixture, BasicFetching) {
     auto msid = MigrationSessionId::generate(fromShard, "Recipient");
 
     auto outerOpCtx = operationContext();
-    auto newClient =
-        outerOpCtx->getServiceContext()->getService()->makeClient("MigrationCoordinator");
+    auto newClient = outerOpCtx->getServiceContext()->makeClient("MigrationCoordinator");
     AlternativeClientRegion acr(newClient);
 
     auto executor =

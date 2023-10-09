@@ -899,8 +899,7 @@ TEST_F(ShardRoleTest, WritesOnMultiDocTransactionsUseLatestCatalog) {
 
     // Drop a collection
     {
-        auto newClient =
-            opCtx()->getServiceContext()->getService()->makeClient("AlternativeClient");
+        auto newClient = opCtx()->getServiceContext()->makeClient("AlternativeClient");
         AlternativeClientRegion acr(newClient);
         auto newOpCtx = cc().makeOperationContext();
         DBDirectClient directClient(newOpCtx.get());
@@ -1967,8 +1966,7 @@ TEST_F(ShardRoleTest, ScopedLocalCatalogWriteFenceWUOWRollbackAfterANotherClient
 
     // Another client creates the collection
     {
-        auto newClient =
-            opCtx()->getServiceContext()->getService()->makeClient("MigrationCoordinator");
+        auto newClient = opCtx()->getServiceContext()->makeClient("MigrationCoordinator");
         auto newOpCtx = newClient->makeOperationContext();
         createTestCollection(newOpCtx.get(), nss);
     }

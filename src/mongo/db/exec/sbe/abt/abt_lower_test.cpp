@@ -187,7 +187,6 @@ protected:
         ScanDefOptions opts;
         opts.insert({"type", "mongod"});
         MultikeynessTrie trie;
-        IndexedFieldPaths indexedFieldPaths;
         bool exists = true;
         CEType ce{false};
         return ScanDefinition(DatabaseNameUtil::deserialize(
@@ -199,8 +198,7 @@ protected:
                               dnp,
                               exists,
                               ce,
-                              shardingMetadata,
-                              indexedFieldPaths);
+                              shardingMetadata);
     }
 
     // Does not add the node to the Node map, must be called inside '_node()'.

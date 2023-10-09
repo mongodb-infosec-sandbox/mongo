@@ -203,12 +203,6 @@ struct PlanStageStaticData {
 
     // Shared pointers (and a map) to the additonal collators used by this SBE plan.
     std::vector<std::unique_ptr<CollatorInterface>> collators;
-
-    /**
-     * For commands that return multiple cursors, this value will contain the type of cursor.
-     * Default to a regular result cursor.
-     */
-    CursorTypeEnum cursorType = CursorTypeEnum::DocumentResult;
 };
 
 /**

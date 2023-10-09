@@ -373,6 +373,7 @@ public:
                     }
                 } else {
                     LOGV2(22749,
+                          "Unexpected field for mongos collStats: {fieldName}",
                           "Unexpected field for mongos collStats",
                           "fieldName"_attr = e.fieldName());
                 }

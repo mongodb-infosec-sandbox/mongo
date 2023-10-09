@@ -1359,7 +1359,10 @@ ExecutorFuture<void> CreateCollectionCoordinatorLegacy::_runImpl(
                                                              _doc.getTranslatedRequestParams());
 
                 audit::logShardCollection(
-                    opCtx->getClient(), nss(), *_request.getShardKey(), _request.getUnique());
+                    opCtx->getClient(),
+                    NamespaceStringUtil::serialize(nss(), SerializationContext::stateDefault()),
+                    *_request.getShardKey(),
+                    _request.getUnique());
 
                 _initialChunks =
                     createChunks(opCtx, shardKeyPattern, _collectionUUID, _splitPolicy, nss());
@@ -1566,7 +1569,10 @@ ExecutorFuture<void> CreateCollectionCoordinator::_runImpl(
                                                              _doc.getTranslatedRequestParams());
 
                 audit::logShardCollection(
-                    opCtx->getClient(), nss(), *_request.getShardKey(), _request.getUnique());
+                    opCtx->getClient(),
+                    NamespaceStringUtil::serialize(nss(), SerializationContext::stateDefault()),
+                    *_request.getShardKey(),
+                    _request.getUnique());
 
                 _initialChunks =
                     createChunks(opCtx, shardKeyPattern, _collectionUUID, _splitPolicy, nss());

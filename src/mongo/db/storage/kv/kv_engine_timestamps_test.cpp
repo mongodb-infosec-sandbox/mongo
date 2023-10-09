@@ -104,7 +104,7 @@ public:
     };
 
     Operation makeOperation() {
-        return Operation(getServiceContext()->getService()->makeClient(""),
+        return Operation(getServiceContext()->makeClient(""),
                          helper->getEngine()->newRecoveryUnit());
     }
 

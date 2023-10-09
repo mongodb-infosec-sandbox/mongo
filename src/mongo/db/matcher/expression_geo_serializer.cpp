@@ -178,8 +178,7 @@ void appendGeometrySubObject(BSONObjBuilder* bob,
 
 void geoCustomSerialization(BSONObjBuilder* bob,
                             const BSONObj& obj,
-                            const SerializationOptions& opts,
-                            bool includePath) {
+                            const SerializationOptions& opts) {
     BSONElement outerElem = obj.firstElement();
 
     // Legacy GeoNear query.

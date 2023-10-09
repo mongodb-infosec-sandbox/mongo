@@ -70,6 +70,7 @@ TaskRunner::NextAction runSingleTask(const TaskRunner::Task& task,
         return task(opCtx, status);
     } catch (...) {
         LOGV2(21777,
+              "Unhandled exception in task runner: {error}",
               "Unhandled exception in task runner",
               "error"_attr = redact(exceptionToStatus()));
     }
@@ -184,7 +185,7 @@ void TaskRunner::_runTasks() {
         lk.unlock();
         // Cancel remaining tasks with a CallbackCanceled status.
         for (auto&& task : tasks) {
-            runSingleTask(task,
+            runSingleTask(std::move(task),
                           nullptr,
                           Status(ErrorCodes::CallbackCanceled,
                                  "this task has been canceled by a previously invoked task"));

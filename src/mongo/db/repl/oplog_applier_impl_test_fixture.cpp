@@ -491,7 +491,7 @@ OplogEntry makeOplogEntry(OpTime opTime,
                           boost::optional<RetryImageEnum> needsRetryImage) {
     return {DurableOplogEntry(opTime,                     // optime
                               opType,                     // opType
-                              nss,                        // namespace
+                              std::move(nss),             // namespace
                               uuid,                       // uuid
                               fromMigrate,                // fromMigrate
                               boost::none,                // checkExistenceForDiffInsert

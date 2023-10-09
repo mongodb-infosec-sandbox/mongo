@@ -117,14 +117,14 @@ public:
                 NamespaceString::validDBName(nss.dbName()));
 
         auto dbMode = mode;
-        if (!nss.isDbOnly()) {
+        if (!nsIsDbOnly(ns)) {
             // Only acquire minimum dbLock mode required for collection lock acquisition.
             dbMode = isSharedLockMode(mode) ? MODE_IS : MODE_IX;
         }
 
         Lock::DBLock dbLock(opCtx, nss.dbName(), dbMode, Date_t::max());
 
-        if (nss.isDbOnly()) {
+        if (nsIsDbOnly(ns)) {
             LOGV2(6001602,
                   "Database lock acquired by sleep command.",
                   "lockMode"_attr = modeName(dbMode));

@@ -139,7 +139,7 @@ public:
                                                false, /* unsplittable */
                                                nullptr /* defaultCollator */,
                                                false /* unique */,
-                                               epoch,
+                                               std::move(epoch),
                                                Timestamp(1, 1),
                                                boost::none /* timeseriesFields */,
                                                boost::none /* reshardingFields */,

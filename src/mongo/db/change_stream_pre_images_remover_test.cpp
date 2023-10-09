@@ -251,7 +251,7 @@ protected:
         auto clock = clockSource();
         clock->advance(timeToAdvance);
         auto& manager = ChangeStreamPreImagesCollectionManager::get(getServiceContext());
-        auto newClient = getServiceContext()->getService()->makeClient("");
+        auto newClient = getServiceContext()->makeClient("");
         AlternativeClientRegion acr(newClient);
         manager.performExpiredChangeStreamPreImagesRemovalPass(&cc());
         return manager.getPurgingJobStats().toBSON();

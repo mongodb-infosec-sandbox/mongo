@@ -134,8 +134,7 @@ public:
 class AlternativeSessionRegion {
 public:
     AlternativeSessionRegion(OperationContext* opCtx)
-        : _alternateClient(
-              opCtx->getServiceContext()->getService()->makeClient("alternative-session-region")),
+        : _alternateClient(opCtx->getServiceContext()->makeClient("alternative-session-region")),
           _acr(_alternateClient),
           _newOpCtx(cc().makeOperationContext()),
           _lsid(makeLogicalSessionId(opCtx)) {

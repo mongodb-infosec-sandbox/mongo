@@ -97,8 +97,7 @@ public:
             MatchExpressionParser::kDefaultSpecialFeatures,
         const ProjectionPolicies& projectionPolicies = ProjectionPolicies::findProjectionPolicies(),
         std::vector<std::unique_ptr<InnerPipelineStageInterface>> cqPipeline = {},
-        bool isCountLike = false,
-        bool isSearchQuery = false);
+        bool isCountLike = false);
 
     /**
      * Creates a CanonicalQuery from a ParsedFindCommand. Uses 'expCtx->opCtx', which must be valid.
@@ -108,8 +107,7 @@ public:
         std::unique_ptr<ParsedFindCommand> parsedFind,
         bool explain = false,
         std::vector<std::unique_ptr<InnerPipelineStageInterface>> cqPipeline = {},
-        bool isCountLike = false,
-        bool isSearchQuery = false);
+        bool isCountLike = false);
 
     /**
      * For testing or for internal clients to use.
@@ -350,17 +348,11 @@ public:
         return _inputParamIdToExpressionMap.size();
     }
 
-    // Return true if the cqPipeline starts with $search or $searchMeta.
-    bool isSearchQuery() const {
-        return _isSearchQuery;
-    }
-
 private:
     Status initCq(boost::intrusive_ptr<ExpressionContext> expCtx,
                   std::unique_ptr<ParsedFindCommand> parsedFind,
                   std::vector<std::unique_ptr<InnerPipelineStageInterface>> cqPipeline,
-                  bool isCountLike,
-                  bool isSearchQuery);
+                  bool isCountLike);
 
     boost::intrusive_ptr<ExpressionContext> _expCtx;
 
@@ -427,8 +419,6 @@ private:
     // predicates (usally > 512). This flag can be reused for additional do-not-cache conditions in
     // the future.
     bool _isUncacheableSbe = false;
-
-    bool _isSearchQuery = false;
 };
 
 }  // namespace mongo

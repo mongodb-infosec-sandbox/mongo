@@ -172,11 +172,8 @@ Status _dropView(OperationContext* opCtx,
     auto view =
         CollectionCatalog::get(opCtx)->lookupViewWithoutValidatingDurable(opCtx, collectionName);
     if (!view) {
-        audit::logDropView(opCtx->getClient(),
-                           collectionName,
-                           NamespaceString::kEmpty,
-                           {},
-                           ErrorCodes::NamespaceNotFound);
+        audit::logDropView(
+            opCtx->getClient(), collectionName, "", {}, ErrorCodes::NamespaceNotFound);
         return Status::OK();
     }
 
@@ -210,7 +207,11 @@ Status _dropView(OperationContext* opCtx,
     WriteUnitOfWork wunit(opCtx);
 
     audit::logDropView(
-        opCtx->getClient(), collectionName, view->viewOn(), view->pipeline(), ErrorCodes::OK);
+        opCtx->getClient(),
+        collectionName,
+        NamespaceStringUtil::serialize(view->viewOn(), SerializationContext::stateDefault()),
+        view->pipeline(),
+        ErrorCodes::OK);
 
     Status status = db->dropView(opCtx, collectionName);
     if (!status.isOK()) {
@@ -522,11 +523,8 @@ Status _dropCollection(OperationContext* opCtx,
                     return ex.toStatus();
                 }
 
-                audit::logDropView(opCtx->getClient(),
-                                   collectionName,
-                                   NamespaceString::kEmpty,
-                                   {},
-                                   ErrorCodes::NamespaceNotFound);
+                audit::logDropView(
+                    opCtx->getClient(), collectionName, "", {}, ErrorCodes::NamespaceNotFound);
                 return Status::OK();
             }
             if (view->timeseries() &&
@@ -661,6 +659,7 @@ void checkForIdIndexesAndDropPendingCollections(OperationContext* opCtx,
         if (nss.isDropPendingNamespace()) {
             auto dropOpTime = fassert(40459, nss.getDropPendingNamespaceOpTime());
             LOGV2(20321,
+                  "Found drop-pending namespace {namespace} with drop optime {dropOpTime}",
                   "Found drop-pending namespace",
                   logAttrs(nss),
                   "dropOpTime"_attr = dropOpTime);
@@ -704,15 +703,18 @@ void clearTempCollections(OperationContext* opCtx, const DatabaseName& dbName) {
             Status status = db->dropCollection(opCtx, collection->ns());
             if (!status.isOK()) {
                 LOGV2_WARNING(20327,
+                              "could not drop temp collection '{namespace}': {error}",
                               "could not drop temp collection",
                               logAttrs(collection->ns()),
                               "error"_attr = redact(status));
             }
             wuow.commit();
         } catch (const StorageUnavailableException&) {
-            LOGV2_WARNING(20328,
-                          "could not drop temp collection due to WriteConflictException",
-                          logAttrs(collection->ns()));
+            LOGV2_WARNING(
+                20328,
+                "could not drop temp collection '{namespace}' due to WriteConflictException",
+                "could not drop temp collection due to WriteConflictException",
+                logAttrs(collection->ns()));
             opCtx->recoveryUnit()->abandonSnapshot();
         }
         return true;

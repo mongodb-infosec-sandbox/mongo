@@ -631,13 +631,13 @@ TEST_F(RollbackImplTest, RollbackKillsNecessaryOperations) {
     transport::TransportLayerMock transportLayer;
     std::shared_ptr<transport::Session> session = transportLayer.createSession();
 
-    auto writeClient = getGlobalServiceContext()->getService()->makeClient("writeClient", session);
+    auto writeClient = getGlobalServiceContext()->makeClient("writeClient", session);
     auto writeOpCtx = writeClient->makeOperationContext();
     boost::optional<Lock::GlobalLock> globalWrite;
     globalWrite.emplace(writeOpCtx.get(), MODE_IX);
     ASSERT(globalWrite->isLocked());
 
-    auto readClient = getGlobalServiceContext()->getService()->makeClient("readClient", session);
+    auto readClient = getGlobalServiceContext()->makeClient("readClient", session);
     auto readOpCtx = readClient->makeOperationContext();
     boost::optional<Lock::GlobalLock> globalRead;
     globalRead.emplace(readOpCtx.get(), MODE_IS);
@@ -1229,8 +1229,8 @@ TEST_F(RollbackImplTest, RollbackProperlySavesFilesWhenCollectionIsRenamed) {
     const auto nssAfterRename = NamespaceString::createNamespaceString_forTest("db.secondColl");
     auto renameCmdObj = BSON("renameCollection" << nssBeforeRename.ns_forTest() << "to"
                                                 << nssAfterRename.ns_forTest());
-    auto renameCmdOp =
-        makeCommandOp(Timestamp(3, 3), uuidBeforeRename, nssBeforeRename, renameCmdObj, 3);
+    auto renameCmdOp = makeCommandOp(
+        Timestamp(3, 3), uuidBeforeRename, nssBeforeRename.ns_forTest(), renameCmdObj, 3);
     ASSERT_OK(_insertOplogEntry(renameCmdOp.first));
     ASSERT_OK(
         _storageInterface->renameCollection(_opCtx.get(), nssBeforeRename, nssAfterRename, true));
@@ -1448,7 +1448,7 @@ TEST_F(RollbackImplTest, CountChangesCancelOut) {
     // Test that we read the collection count from drop entries.
     ASSERT_OK(_insertOplogEntry(makeCommandOp(Timestamp(5, 5),
                                               uuid,
-                                              nss.getCommandNS(),
+                                              nss.getCommandNS().toString_forTest(),
                                               BSON("drop" << nss.coll()),
                                               5,
                                               BSON("numRecords" << 1))
@@ -2052,8 +2052,11 @@ TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsIgnoresNamespaceOfNoopOplog
 TEST_F(RollbackImplObserverInfoTest,
        NamespacesForOpsExtractsNamespaceOfCreateCollectionOplogEntry) {
     auto nss = NamespaceString::createNamespaceString_forTest("test", "coll");
-    auto cmdOp = makeCommandOp(
-        Timestamp(2, 2), UUID::gen(), nss.getCommandNS(), BSON("create" << nss.coll()), 2);
+    auto cmdOp = makeCommandOp(Timestamp(2, 2),
+                               UUID::gen(),
+                               nss.getCommandNS().toString_forTest(),
+                               BSON("create" << nss.coll()),
+                               2);
     std::set<NamespaceString> expectedNamespaces = {nss};
     auto namespaces =
         unittest::assertGet(_rollback->_namespacesForOp_forTest(OplogEntry(cmdOp.first)));
@@ -2062,8 +2065,11 @@ TEST_F(RollbackImplObserverInfoTest,
 
 TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsExtractsNamespaceOfDropCollectionOplogEntry) {
     auto nss = NamespaceString::createNamespaceString_forTest("test", "coll");
-    auto cmdOp = makeCommandOp(
-        Timestamp(2, 2), UUID::gen(), nss.getCommandNS(), BSON("drop" << nss.coll()), 2);
+    auto cmdOp = makeCommandOp(Timestamp(2, 2),
+                               UUID::gen(),
+                               nss.getCommandNS().toString_forTest(),
+                               BSON("drop" << nss.coll()),
+                               2);
 
     std::set<NamespaceString> expectedNamespaces = {nss};
     auto namespaces =
@@ -2079,7 +2085,8 @@ TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsExtractsNamespaceOfCreateIn
                              << "x"
                              << "name"
                              << "x_1");
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), UUID::gen(), nss.getCommandNS(), indexObj, 2);
+    auto cmdOp = makeCommandOp(
+        Timestamp(2, 2), UUID::gen(), nss.getCommandNS().toString_forTest(), indexObj, 2);
 
     std::set<NamespaceString> expectedNamespaces = {nss};
     auto namespaces =
@@ -2091,7 +2098,7 @@ TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsExtractsNamespaceOfDropInde
     auto nss = NamespaceString::createNamespaceString_forTest("test", "coll");
     auto cmdOp = makeCommandOp(Timestamp(2, 2),
                                UUID::gen(),
-                               nss.getCommandNS(),
+                               nss.getCommandNS().toString_forTest(),
                                BSON("dropIndexes" << nss.coll() << "index"
                                                   << "x_1"),
                                2);
@@ -2107,7 +2114,8 @@ TEST_F(RollbackImplObserverInfoTest,
     auto toNss = NamespaceString::createNamespaceString_forTest("test", "dest");
 
     auto cmdObj = BSON("renameCollection" << fromNss.ns_forTest() << "to" << toNss.ns_forTest());
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), UUID::gen(), fromNss.getCommandNS(), cmdObj, 2);
+    auto cmdOp =
+        makeCommandOp(Timestamp(2, 2), UUID::gen(), fromNss.getCommandNS().ns_forTest(), cmdObj, 2);
 
     std::set<NamespaceString> expectedNamespaces = {fromNss, toNss};
     auto namespaces =
@@ -2128,7 +2136,12 @@ TEST_F(RollbackImplObserverInfoTest,
                                           << "to"
                                           << NamespaceStringUtil::serialize(
                                                  toNss, SerializationContext::stateDefault()));
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), UUID::gen(), fromNss, cmdObj, 2);
+    auto cmdOp =
+        makeCommandOp(Timestamp(2, 2),
+                      UUID::gen(),
+                      NamespaceStringUtil::serialize(fromNss, SerializationContext::stateDefault()),
+                      cmdObj,
+                      2);
 
 
     std::set<NamespaceString> expectedNamespaces = {fromNss, toNss};
@@ -2151,7 +2164,14 @@ TEST_F(RollbackImplObserverInfoTest,
                                           << "to"
                                           << NamespaceStringUtil::serialize(
                                                  toNss, SerializationContext::stateDefault()));
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), UUID::gen(), fromNss, cmdObj, 2, boost::none, tid);
+    auto cmdOp =
+        makeCommandOp(Timestamp(2, 2),
+                      UUID::gen(),
+                      NamespaceStringUtil::serialize(fromNss, SerializationContext::stateDefault()),
+                      cmdObj,
+                      2,
+                      boost::none,
+                      tid);
 
     std::set<NamespaceString> expectedNamespaces = {fromNss, toNss};
     auto namespaces =
@@ -2162,7 +2182,8 @@ TEST_F(RollbackImplObserverInfoTest,
 TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsIgnoresNamespaceOfDropDatabaseOplogEntry) {
     auto nss = NamespaceString::createNamespaceString_forTest("test", "coll");
     auto cmdObj = BSON("dropDatabase" << 1);
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), boost::none, nss.getCommandNS(), cmdObj, 2);
+    auto cmdOp =
+        makeCommandOp(Timestamp(2, 2), boost::none, nss.getCommandNS().ns_forTest(), cmdObj, 2);
 
     std::set<NamespaceString> expectedNamespaces = {};
     auto namespaces =
@@ -2174,7 +2195,8 @@ TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsExtractsNamespacesOfCollMod
     auto nss = NamespaceString::createNamespaceString_forTest("test", "coll");
     auto cmdObj = BSON("collMod" << nss.coll() << "validationLevel"
                                  << "off");
-    auto cmdOp = makeCommandOp(Timestamp(2, 2), UUID::gen(), nss.getCommandNS(), cmdObj, 2);
+    auto cmdOp =
+        makeCommandOp(Timestamp(2, 2), UUID::gen(), nss.getCommandNS().ns_forTest(), cmdObj, 2);
 
     std::set<NamespaceString> expectedNamespaces = {nss};
     auto namespaces =
@@ -2185,11 +2207,7 @@ TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsExtractsNamespacesOfCollMod
 TEST_F(RollbackImplObserverInfoTest, NamespacesForOpsFailsOnUnsupportedOplogEntry) {
     // 'emptycapped' is not supported in rollback.
     auto emptycappedOp =
-        makeCommandOp(Timestamp(2, 2),
-                      boost::none,
-                      NamespaceString::createNamespaceString_forTest("test", "$cmd"),
-                      BSON("emptycapped" << 1),
-                      2);
+        makeCommandOp(Timestamp(2, 2), boost::none, "test.$cmd", BSON("emptycapped" << 1), 2);
 
     auto status = _rollback->_namespacesForOp_forTest(OplogEntry(emptycappedOp.first)).getStatus();
     ASSERT_EQUALS(ErrorCodes::UnrecoverableRollbackError, status);
@@ -2202,19 +2220,15 @@ DEATH_TEST_F(RollbackImplObserverInfoTest,
     auto createNss = NamespaceString::createNamespaceString_forTest("test", "createColl");
     auto createOp = makeCommandOp(Timestamp(2, 2),
                                   UUID::gen(),
-                                  createNss.getCommandNS(),
+                                  createNss.getCommandNS().toString_forTest(),
                                   BSON("create" << createNss.coll()),
                                   2);
 
     // Create the applyOps command object.
     BSONArrayBuilder subops;
     subops.append(createOp.first);
-    auto applyOpsCmdOp =
-        makeCommandOp(Timestamp(2, 2),
-                      boost::none,
-                      NamespaceString::createNamespaceString_forTest(DatabaseName::kAdmin, "$cmd"),
-                      BSON("applyOps" << subops.arr()),
-                      2);
+    auto applyOpsCmdOp = makeCommandOp(
+        Timestamp(2, 2), boost::none, "admin.$cmd", BSON("applyOps" << subops.arr()), 2);
 
     auto status = _rollback->_namespacesForOp_forTest(OplogEntry(applyOpsCmdOp.first));
     LOGV2(21654,
@@ -2251,12 +2265,8 @@ TEST_F(RollbackImplObserverInfoTest, RollbackRecordsNamespacesOfApplyOpsOplogEnt
     subops.append(createOp.first);
     subops.append(dropOp.first);
     subops.append(collModOp.first);
-    auto applyOpsCmdOp =
-        makeCommandOp(Timestamp(2, 2),
-                      boost::none,
-                      NamespaceString::createNamespaceString_forTest(DatabaseName::kAdmin, "$cmd"),
-                      BSON("applyOps" << subops.arr()),
-                      2);
+    auto applyOpsCmdOp = makeCommandOp(
+        Timestamp(2, 2), boost::none, "admin.$cmd", BSON("applyOps" << subops.arr()), 2);
 
     ASSERT_OK(rollbackOps({applyOpsCmdOp}));
     std::set<NamespaceString> expectedNamespaces = {createNss, dropNss, collModNss};
@@ -2266,13 +2276,12 @@ TEST_F(RollbackImplObserverInfoTest, RollbackRecordsNamespacesOfApplyOpsOplogEnt
 TEST_F(RollbackImplObserverInfoTest, RollbackFailsOnMalformedApplyOpsOplogEntry) {
     // Make the argument to the 'applyOps' command an object instead of an array. This should cause
     // rollback to fail, since applyOps expects an array of ops.
-    auto applyOpsCmdOp =
-        makeCommandOp(Timestamp(2, 2),
-                      boost::none,
-                      NamespaceString::createNamespaceString_forTest(DatabaseName::kAdmin, "$cmd"),
-                      BSON("applyOps" << BSON("not"
-                                              << "array")),
-                      2);
+    auto applyOpsCmdOp = makeCommandOp(Timestamp(2, 2),
+                                       boost::none,
+                                       "admin.$cmd",
+                                       BSON("applyOps" << BSON("not"
+                                                               << "array")),
+                                       2);
 
     auto status = rollbackOps({applyOpsCmdOp});
     ASSERT_NOT_OK(status);
@@ -2318,11 +2327,7 @@ TEST_F(RollbackImplObserverInfoTest, RollbackRecordsMultipleNamespacesOfOplogEnt
 TEST_F(RollbackImplObserverInfoTest, RollbackFailsOnUnknownOplogEntryCommandType) {
     // Create a command of an unknown type.
     auto unknownCmdOp =
-        makeCommandOp(Timestamp(2, 2),
-                      boost::none,
-                      NamespaceString::createNamespaceString_forTest(DatabaseName::kAdmin, "$cmd"),
-                      BSON("unknownCommand" << 1),
-                      2);
+        makeCommandOp(Timestamp(2, 2), boost::none, "admin.$cmd", BSON("unknownCommand" << 1), 2);
 
     auto commonOp = makeOpAndRecordId(1);
     _remoteOplog->setOperations({commonOp});

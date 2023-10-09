@@ -14,8 +14,7 @@ import {getLatestProfilerEntry} from "jstests/libs/profiler.js";
 var testDB = db.getSiblingDB("profile_distinct");
 assert.commandWorked(testDB.dropDatabase());
 var conn = testDB.getMongo();
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 

@@ -971,7 +971,7 @@ AutoGetCollectionForReadCommandBase<AutoGetCollectionForReadType>::
       _statsTracker(boost::in_place_init_if,
                     nsOrUUID.isNamespaceString(),
                     opCtx,
-                    nsOrUUID.isNamespaceString() ? nsOrUUID.nss() : NamespaceString::kEmpty,
+                    nsOrUUID.isNamespaceString() ? nsOrUUID.nss() : NamespaceString(),
                     Top::LockType::ReadLocked,
                     logMode,
                     CollectionCatalog::get(opCtx)->getDatabaseProfileLevel(nsOrUUID.dbName()),

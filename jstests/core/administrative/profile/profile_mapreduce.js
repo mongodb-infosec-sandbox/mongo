@@ -18,8 +18,7 @@ import {getLatestProfilerEntry} from "jstests/libs/profiler.js";
 const testDB = db.getSiblingDB("profile_mapreduce");
 assert.commandWorked(testDB.dropDatabase());
 const conn = testDB.getMongo();
-const collName = jsTestName();
-const coll = testDB.getCollection(collName);
+const coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 

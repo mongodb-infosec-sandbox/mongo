@@ -88,7 +88,7 @@ public:
         }
 
         NamespaceString ns() const override {
-            return NamespaceString::kEmpty;
+            return NamespaceString();
         }
 
         bool supportsWriteConcern() const override {

@@ -85,8 +85,8 @@ DocumentSourceOut::~DocumentSourceOut() {
         // If creating a time-series collection, we must drop the "real" buckets collection, if
         // anything goes wrong creating the view.
         if (_tempNs.size() || (_timeseries && !_timeseriesStateConsistent)) {
-            auto cleanupClient = pExpCtx->opCtx->getServiceContext()->getService()->makeClient(
-                "$out_replace_coll_cleanup");
+            auto cleanupClient =
+                pExpCtx->opCtx->getServiceContext()->makeClient("$out_replace_coll_cleanup");
 
             AlternativeClientRegion acr(cleanupClient);
             // Create a new operation context so that any interrupts on the current operation will
@@ -100,7 +100,7 @@ DocumentSourceOut::~DocumentSourceOut() {
                 pExpCtx->mongoProcessInterface->dropTempCollection(cleanupOpCtx.get(), deleteNs);
             } catch (const DBException& e) {
                 LOGV2_WARNING(7466203,
-                              "Unexpected error dropping temporary collection; drop will complete "
+                              "Unexpected error dropping temporary collection; drop will complete ",
                               "on next server restart",
                               "error"_attr = e.toString(),
                               "coll"_attr = deleteNs);

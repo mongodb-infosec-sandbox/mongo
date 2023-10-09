@@ -542,7 +542,12 @@ StatusWith<std::unique_ptr<QuerySolution>> tryToBuildSearchQuerySolution(
                 "not building $search node because the query pipeline is empty"};
     }
 
-    if (query.isSearchQuery()) {
+    const auto stage = query.cqPipeline().front()->documentSource();
+    auto isSearch = getSearchHelpers(query.getOpCtx()->getServiceContext())->isSearchStage(stage);
+    auto isSearchMeta =
+        getSearchHelpers(query.getOpCtx()->getServiceContext())->isSearchMetaStage(stage);
+
+    if (isSearch || isSearchMeta) {
         tassert(7816300,
                 "Pushing down $search into SBE but forceClassicEngine is true.",
                 !query.getForceClassicEngine());
@@ -553,8 +558,8 @@ StatusWith<std::unique_ptr<QuerySolution>> tryToBuildSearchQuerySolution(
                 "Pushing down $search into SBE but featureFlagSearchInSbe is disabled.",
                 feature_flags::gFeatureFlagSearchInSbe.isEnabledAndIgnoreFCVUnsafe());
 
-        auto searchNode = getSearchHelpers(query.getOpCtx()->getServiceContext())
-                              ->getSearchNode(query.cqPipeline().front()->documentSource());
+        auto searchNode =
+            getSearchHelpers(query.getOpCtx()->getServiceContext())->getSearchNode(stage);
 
         if (searchNode->searchQuery.getBoolField(kReturnStoredSourceArg) ||
             searchNode->isSearchMeta) {

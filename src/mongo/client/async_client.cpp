@@ -102,12 +102,8 @@ Future<AsyncDBClient::Handle> AsyncDBClient::connect(
     std::shared_ptr<const transport::SSLConnectionContext> transientSSLContext) {
     auto tl = context->getTransportLayer();
     return tl
-        ->asyncConnect(peer,
-                       sslMode,
-                       reactor,
-                       timeout,
-                       std::move(connectionMetrics),
-                       std::move(transientSSLContext))
+        ->asyncConnect(
+            peer, sslMode, std::move(reactor), timeout, connectionMetrics, transientSSLContext)
         .then([peer, context](std::shared_ptr<transport::Session> session) {
             return std::make_shared<AsyncDBClient>(peer, std::move(session), context);
         });
@@ -155,8 +151,10 @@ void AsyncDBClient::_parseHelloResponse(BSONObj request,
         uassertStatusOK(wire_version::parseWireVersionFromHelloReply(responseBody));
     auto validateStatus = wire_version::validateWireVersion(wireSpec->outgoing, replyWireVersion);
     if (!validateStatus.isOK()) {
-        LOGV2_WARNING(
-            23741, "Remote host has incompatible wire version", "error"_attr = validateStatus);
+        LOGV2_WARNING(23741,
+                      "Remote host has incompatible wire version: {error}",
+                      "Remote host has incompatible wire version",
+                      "error"_attr = validateStatus);
         uasserted(validateStatus.code(),
                   str::stream() << "remote host has incompatible wire version: "
                                 << validateStatus.reason());
@@ -276,7 +274,7 @@ Future<void> AsyncDBClient::initWireVersion(const std::string& appName,
             _parseHelloResponse(requestObj, cmdReply);
             if (hook) {
                 executor::RemoteCommandResponse cmdResp(*cmdReply, timer.elapsed());
-                uassertStatusOK(hook->validateHost(_peer, requestObj, cmdResp));
+                uassertStatusOK(hook->validateHost(_peer, requestObj, std::move(cmdResp)));
             }
         });
 }
@@ -377,8 +375,8 @@ Future<executor::RemoteCommandResponse> AsyncDBClient::runCommandRequest(
     const BatonHandle& baton,
     boost::optional<std::shared_ptr<Timer>> fromConnAcquiredTimer) {
     auto startTimer = Timer();
-    auto opMsgRequest =
-        OpMsgRequest::fromDBAndBody(request.dbname, std::move(request.cmdObj), request.metadata);
+    auto opMsgRequest = OpMsgRequest::fromDBAndBody(
+        std::move(request.dbname), std::move(request.cmdObj), std::move(request.metadata));
     opMsgRequest.validatedTenancyScope = request.validatedTenancyScope;
     return runCommand(
                std::move(opMsgRequest), baton, request.options.fireAndForget, fromConnAcquiredTimer)
@@ -417,8 +415,8 @@ Future<executor::RemoteCommandResponse> AsyncDBClient::runExhaustCommand(OpMsgRe
 
 Future<executor::RemoteCommandResponse> AsyncDBClient::beginExhaustCommandRequest(
     executor::RemoteCommandRequest request, const BatonHandle& baton) {
-    auto opMsgRequest =
-        OpMsgRequest::fromDBAndBody(request.dbname, std::move(request.cmdObj), request.metadata);
+    auto opMsgRequest = OpMsgRequest::fromDBAndBody(
+        std::move(request.dbname), std::move(request.cmdObj), std::move(request.metadata));
     opMsgRequest.validatedTenancyScope = request.validatedTenancyScope;
 
     return runExhaustCommand(std::move(opMsgRequest), baton);

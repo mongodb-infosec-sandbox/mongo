@@ -30,8 +30,7 @@ const nestedCWS = Code("function(){return 1;}", {
 });
 var conn = MongoRunner.runMongod({setParameter: "maxBSONDepth=30"});
 var testDB = conn.getDB("nestedCWS");
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 coll.insert({_id: nestedCWS});
 
 MongoRunner.stopMongod(conn);

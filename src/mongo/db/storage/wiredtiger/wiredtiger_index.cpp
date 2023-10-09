@@ -274,7 +274,7 @@ NamespaceString WiredTigerIndex::getCollectionNamespace(OperationContext* opCtx)
 
     // In testing this may be boost::none.
     if (!nss)
-        return NamespaceString::kEmpty;
+        return NamespaceString();
     return *nss;
 }
 

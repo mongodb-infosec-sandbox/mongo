@@ -18,8 +18,7 @@ import {getLatestProfilerEntry, getNLatestProfilerEntries} from "jstests/libs/pr
 // Setup test db and collection.
 var testDB = db.getSiblingDB("profile_update");
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName();
-var coll = testDB.getCollection(collName);
+var coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 

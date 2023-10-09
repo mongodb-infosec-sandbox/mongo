@@ -139,19 +139,8 @@ public:
                 !from.empty());
 
         auto const catalogClient = Grid::get(opCtx)->catalogClient();
-        auto shardedOrUntrackedColls = catalogClient->getShardedCollectionNamespacesForDb(
+        const auto shardedColls = catalogClient->getShardedCollectionNamespacesForDb(
             opCtx, dbName, repl::ReadConcernLevel::kMajorityReadConcern, {});
-        const auto databasePrimary =
-            catalogClient->getDatabase(opCtx, dbName, repl::ReadConcernLevel::kMajorityReadConcern)
-                .getPrimary()
-                .toString();
-        auto unsplittableCollsOutsideDbPrimary =
-            catalogClient->getUnsplittableCollectionNamespacesForDbOutsideOfShards(
-                opCtx, dbName, {databasePrimary}, repl::ReadConcernLevel::kMajorityReadConcern);
-
-        std::move(unsplittableCollsOutsideDbPrimary.begin(),
-                  unsplittableCollsOutsideDbPrimary.end(),
-                  std::back_inserter(shardedOrUntrackedColls));
 
         DisableDocumentValidation disableValidation(opCtx);
 
@@ -159,8 +148,7 @@ public:
         std::set<std::string> clonedColls;
 
         Cloner cloner;
-        uassertStatusOK(
-            cloner.copyDb(opCtx, dbName, from.toString(), shardedOrUntrackedColls, &clonedColls));
+        uassertStatusOK(cloner.copyDb(opCtx, dbName, from.toString(), shardedColls, &clonedColls));
         {
             BSONArrayBuilder cloneBarr = result.subarrayStart("clonedColls");
             cloneBarr.append(clonedColls);

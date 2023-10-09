@@ -116,9 +116,7 @@ public:
 protected:
     void _debugList(StringBuilder& debug, int indentationLevel) const;
 
-    void _listToBSON(BSONArrayBuilder* out,
-                     const SerializationOptions& opts = {},
-                     bool includePath = true) const;
+    void _listToBSON(BSONArrayBuilder* out, const SerializationOptions& opts) const;
 
 private:
     ExpressionOptimizerFunc getOptimizer() const final;
@@ -158,9 +156,7 @@ public:
 
     virtual void debugString(StringBuilder& debug, int indentationLevel = 0) const;
 
-    virtual void serialize(BSONObjBuilder* out,
-                           const SerializationOptions& opts = {},
-                           bool includePath = true) const;
+    virtual void serialize(BSONObjBuilder* out, const SerializationOptions& opts) const;
 
     bool isTriviallyTrue() const final;
 
@@ -205,9 +201,7 @@ public:
 
     virtual void debugString(StringBuilder& debug, int indentationLevel = 0) const;
 
-    virtual void serialize(BSONObjBuilder* out,
-                           const SerializationOptions& opts = {},
-                           bool includePath = true) const;
+    virtual void serialize(BSONObjBuilder* out, const SerializationOptions& opts) const;
 
     bool isTriviallyFalse() const final;
 
@@ -252,9 +246,7 @@ public:
 
     virtual void debugString(StringBuilder& debug, int indentationLevel = 0) const;
 
-    virtual void serialize(BSONObjBuilder* out,
-                           const SerializationOptions& opts = {},
-                           bool includePath = true) const;
+    virtual void serialize(BSONObjBuilder* out, const SerializationOptions& opts) const;
 
     void acceptVisitor(MatchExpressionMutableVisitor* visitor) final {
         visitor->visit(this);
@@ -295,9 +287,7 @@ public:
 
     virtual void debugString(StringBuilder& debug, int indentationLevel = 0) const;
 
-    virtual void serialize(BSONObjBuilder* out,
-                           const SerializationOptions& opts = {},
-                           bool includePath = true) const;
+    virtual void serialize(BSONObjBuilder* out, const SerializationOptions& opts) const;
 
     bool equivalent(const MatchExpression* other) const final;
 
@@ -339,8 +329,7 @@ public:
 private:
     static void serializeNotExpressionToNor(MatchExpression* exp,
                                             BSONObjBuilder* out,
-                                            const SerializationOptions& opts = {},
-                                            bool includePath = true);
+                                            const SerializationOptions& opts);
 
     ExpressionOptimizerFunc getOptimizer() const final;
 

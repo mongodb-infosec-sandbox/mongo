@@ -85,9 +85,7 @@ public:
     }
 
     void setOk(double value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         validateOk(value);
         _ok = std::move(value);
         _hasOk = true;
@@ -101,9 +99,7 @@ public:
     }
 
     void setIdx(std::int32_t value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         validateIdx(value);
         _idx = std::move(value);
         _hasIdx = true;
@@ -119,9 +115,7 @@ public:
     }
 
     void setN(boost::optional<std::int32_t> value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         _n = std::move(value);
     }
 
@@ -133,9 +127,7 @@ public:
     }
 
     void setNModified(boost::optional<std::int32_t> value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         _nModified = std::move(value);
     }
 
@@ -147,16 +139,12 @@ public:
     }
 
     void setUpserted(boost::optional<IDLAnyTypeOwned> value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         _upserted = std::move(value);
     }
 
     void setUpserted(boost::optional<mongo::write_ops::Upserted> value) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         if (!value) {
             _upserted = boost::none;
             return;
@@ -175,9 +163,7 @@ public:
     }
 
     void setStatus(const Status status) {
-        if (_cached) {
-            _cached = boost::none;
-        }
+        invariant(!_cached);
         _status = std::move(status);
     }
 

@@ -243,6 +243,7 @@ struct DefaultClonerImpl::BatchHandler {
                                                                     true);
                 if (!status.isOK() && status.code() != ErrorCodes::DuplicateKey) {
                     LOGV2_ERROR(20424,
+                                "error: exception cloning object",
                                 "Exception cloning document",
                                 logAttrs(nss),
                                 "error"_attr = redact(status),
@@ -410,7 +411,7 @@ Status DefaultClonerImpl::_createCollectionsForDb(
 
             const Collection* collection = catalog->lookupCollectionByNamespace(opCtx, nss);
             if (collection) {
-                if (!params.shardedOrTrackedOutsideDbPrimary) {
+                if (!params.shardedColl) {
                     // If the collection is unsharded then we want to fail when a collection
                     // we're trying to create already exists.
                     return Status(ErrorCodes::NamespaceExists,
@@ -443,7 +444,7 @@ Status DefaultClonerImpl::_createCollectionsForDb(
             // exist and is unsharded, we create a new collection with its own UUID and
             // copy the options and secondary indexes of the original collection.
 
-            if (params.shardedOrTrackedOutsideDbPrimary) {
+            if (params.shardedColl) {
                 optionsBuilder.append(params.collectionInfo["info"]["uuid"]);
             }
 
@@ -539,12 +540,11 @@ StatusWith<std::vector<BSONObj>> DefaultClonerImpl::getListOfCollections(
     return _filterCollectionsForClone(dbName, initialCollections);
 }
 
-Status DefaultClonerImpl::copyDb(
-    OperationContext* opCtx,
-    const DatabaseName& dbName,
-    const std::string& masterHost,
-    const std::vector<NamespaceString>& shardedOrTrackedOutsideDbPrimary,
-    std::set<std::string>* clonedColls) {
+Status DefaultClonerImpl::copyDb(OperationContext* opCtx,
+                                 const DatabaseName& dbName,
+                                 const std::string& masterHost,
+                                 const std::vector<NamespaceString>& shardedColls,
+                                 std::set<std::string>* clonedColls) {
     invariant(clonedColls && clonedColls->empty(),
               str::stream() << masterHost << ":" << dbName.toStringForErrorMsg());
     // This function can potentially block for a long time on network activity, so holding of locks
@@ -567,10 +567,8 @@ Status DefaultClonerImpl::copyDb(
         }
 
         const auto nss = NamespaceStringUtil::deserialize(dbName, params.collectionName);
-        if (std::find(shardedOrTrackedOutsideDbPrimary.begin(),
-                      shardedOrTrackedOutsideDbPrimary.end(),
-                      nss) != shardedOrTrackedOutsideDbPrimary.end()) {
-            params.shardedOrTrackedOutsideDbPrimary = true;
+        if (std::find(shardedColls.begin(), shardedColls.end(), nss) != shardedColls.end()) {
+            params.shardedColl = true;
         }
         createCollectionParams.push_back(params);
     }
@@ -610,11 +608,14 @@ Status DefaultClonerImpl::copyDb(
 
             // Indexes of sharded collections are not copied: the primary shard is not required to
             // have all indexes. The listIndexes cmd is sent to the shard owning the MinKey value.
-            if (params.shardedOrTrackedOutsideDbPrimary) {
+            if (params.shardedColl) {
                 continue;
             }
 
-            LOGV2(20422, "Copying indexes", "collectionInfo"_attr = params.collectionInfo);
+            LOGV2(20422,
+                  "copying indexes for: {collectionInfo}",
+                  "Copying indexes",
+                  "collectionInfo"_attr = params.collectionInfo);
 
             const auto nss = NamespaceStringUtil::deserialize(dbName, params.collectionName);
 
@@ -627,7 +628,7 @@ Status DefaultClonerImpl::copyDb(
     }
 
     for (auto&& params : createCollectionParams) {
-        if (params.shardedOrTrackedOutsideDbPrimary) {
+        if (params.shardedColl) {
             continue;
         }
 
@@ -654,10 +655,9 @@ Cloner::Cloner() : Cloner(std::make_unique<DefaultClonerImpl>()) {}
 Status Cloner::copyDb(OperationContext* opCtx,
                       const DatabaseName& dbName,
                       const std::string& masterHost,
-                      const std::vector<NamespaceString>& shardedOrTrackedOutsideDbPrimary,
+                      const std::vector<NamespaceString>& shardedColls,
                       std::set<std::string>* clonedColls) {
-    return _clonerImpl->copyDb(
-        opCtx, dbName, masterHost, shardedOrTrackedOutsideDbPrimary, clonedColls);
+    return _clonerImpl->copyDb(opCtx, dbName, masterHost, shardedColls, clonedColls);
 }
 
 StatusWith<std::vector<BSONObj>> Cloner::getListOfCollections(OperationContext* opCtx,

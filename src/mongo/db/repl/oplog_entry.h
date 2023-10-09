@@ -117,7 +117,7 @@ public:
     static ReplOperation parseOwned(const IDLParserContext& ctxt, const BSONObj&& bsonObject) {
         ReplOperation o;
         o.parseProtected(ctxt, bsonObject);
-        o.setAnchor(bsonObject);
+        o.setAnchor(std::move(bsonObject));
         return o;
     }
 

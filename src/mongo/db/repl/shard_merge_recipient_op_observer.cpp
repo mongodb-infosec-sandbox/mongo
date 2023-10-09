@@ -98,7 +98,7 @@ void runOnAlternateClient(const std::string& name, Func func) {
         return !cc().canKillSystemOperationInStepdown(WithLock::withoutLock());
     }();
 
-    auto client = getGlobalServiceContext()->getService()->makeClient(name);
+    auto client = getGlobalServiceContext()->makeClient(name);
     AlternativeClientRegion acr(client);
 
     if (parentClientUnkillableByStepDown) {
@@ -166,7 +166,7 @@ void deleteTenantDataWhenMergeAborts(const ShardMergeRecipientDocument& doc) {
 
         UnreplicatedWritesBlock writeBlock{opCtx};
 
-        writeConflictRetry(opCtx, "dropShardMergeDonorTenantColls", NamespaceString::kEmpty, [&] {
+        writeConflictRetry(opCtx, "dropShardMergeDonorTenantColls", NamespaceString(), [&] {
             WriteUnitOfWork wuow(opCtx);
 
             for (const auto& tenantId : doc.getTenantIds()) {

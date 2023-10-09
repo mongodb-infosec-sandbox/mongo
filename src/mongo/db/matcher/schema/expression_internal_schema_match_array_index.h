@@ -88,8 +88,7 @@ public:
     }
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     std::unique_ptr<MatchExpression> clone() const final;
 

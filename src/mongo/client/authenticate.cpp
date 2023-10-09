@@ -115,7 +115,7 @@ StatusWith<OpMsgRequest> createX509AuthCmd(const BSONObj& params, StringData cli
     }
     auto db = extractDBField(params);
     if (!db.isOK())
-        return db.getStatus();
+        return std::move(db.getStatus());
 
     std::string username;
     auto response = bsonExtractStringFieldWithDefault(
@@ -236,7 +236,7 @@ Future<std::string> negotiateSaslMechanism(RunCommandHook runCommand,
     }
     const auto request = builder.obj();
 
-    return runCommand(OpMsgRequest::fromDBAndBody(DatabaseName::kAdmin, request))
+    return runCommand(OpMsgRequest::fromDBAndBody(DatabaseName::kAdmin, std::move(request)))
         .then([](BSONObj reply) -> Future<std::string> {
             auto mechsArrayObj = reply.getField("saslSupportedMechs");
             if (mechsArrayObj.type() != Array) {

@@ -318,6 +318,7 @@ boost::optional<MigrateInfo> chooseRandomMigration(stdx::unordered_set<ShardId>*
 
     LOGV2_DEBUG(21880,
                 1,
+                "balancerShouldReturnRandomMigrations: source: {fromShardId} dest: {toShardId}",
                 "balancerShouldReturnRandomMigrations",
                 "fromShardId"_attr = donorShard.get(),
                 "toShardId"_attr = recipientShard.get());
@@ -387,6 +388,8 @@ MigrateInfosWithReason BalancerPolicy::balance(
                 if (!to.isValid()) {
                     if (migrations.empty()) {
                         LOGV2_WARNING(21889,
+                                      "Chunk {chunk} is on a draining shard, but no appropriate "
+                                      "recipient found",
                                       "Chunk is on a draining shard, but no appropriate "
                                       "recipient found",
                                       "chunk"_attr = redact(chunk.toString()));
@@ -419,6 +422,8 @@ MigrateInfosWithReason BalancerPolicy::balance(
             if (migrations.empty()) {
                 availableShards->erase(stat.shardId);
                 LOGV2_WARNING(21890,
+                              "Unable to find any chunk to move from draining shard "
+                              "{shardId}. numJumboChunks: {numJumboChunks}",
                               "Unable to find any chunk to move from draining shard",
                               "shardId"_attr = stat.shardId,
                               "numJumboChunks"_attr = numJumboChunks);
@@ -448,10 +453,12 @@ MigrateInfosWithReason BalancerPolicy::balance(
                     continue;
 
                 if (chunk.getJumbo()) {
-                    LOGV2_WARNING(21891,
-                                  "Chunk violates zone, but it is jumbo and cannot be moved",
-                                  "chunk"_attr = redact(chunk.toString()),
-                                  "zone"_attr = redact(zone));
+                    LOGV2_WARNING(
+                        21891,
+                        "Chunk {chunk} violates zone {zone}, but it is jumbo and cannot be moved",
+                        "Chunk violates zone, but it is jumbo and cannot be moved",
+                        "chunk"_attr = redact(chunk.toString()),
+                        "zone"_attr = redact(zone));
 
                     continue;
                 }
@@ -461,6 +468,8 @@ MigrateInfosWithReason BalancerPolicy::balance(
                 if (!to.isValid()) {
                     if (migrations.empty()) {
                         LOGV2_WARNING(21892,
+                                      "Chunk {chunk} violates zone {zone}, but no appropriate "
+                                      "recipient found",
                                       "Chunk violates zone, but no appropriate recipient found",
                                       "chunk"_attr = redact(chunk.toString()),
                                       "zone"_attr = redact(zone));
@@ -522,6 +531,9 @@ MigrateInfosWithReason BalancerPolicy::balance(
             if (!zone.empty()) {
                 LOGV2_WARNING(
                     21893,
+                    "Zone {zone} in collection {namespace} has no assigned shards and chunks "
+                    "which fall into it cannot be balanced. This should be corrected by either "
+                    "assigning shards to the zone or by deleting it.",
                     "Zone in collection has no assigned shards and chunks which fall into it "
                     "cannot be balanced. This should be corrected by either assigning shards "
                     "to the zone or by deleting it.",

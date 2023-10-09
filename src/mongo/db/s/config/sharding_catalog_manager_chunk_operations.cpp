@@ -1962,6 +1962,8 @@ void ShardingCatalogManager::ensureChunkVersionIsGreaterThan(OperationContext* o
             // dropped, its shard key has been refined, the chunk has been split, or the chunk
             // has been merged.
             LOGV2(23884,
+                  "ensureChunkVersionIsGreaterThan did not find any chunks with minKey {minKey}, "
+                  "maxKey {maxKey}, and epoch {epoch}. Returning success.",
                   "ensureChunkVersionIsGreaterThan did not find any matching chunks; returning "
                   "success",
                   "minKey"_attr = minKey,
@@ -1975,6 +1977,11 @@ void ShardingCatalogManager::ensureChunkVersionIsGreaterThan(OperationContext* o
 
         if (version.isOlderThan(matchingChunk.getVersion())) {
             LOGV2(23885,
+                  "ensureChunkVersionIsGreaterThan found that the chunk with minKey {minKey}, "
+                  "maxKey "
+                  "{maxKey}, and epoch {epoch} already has a higher version than {version}. "
+                  "Current "
+                  "chunk is {currentChunk}. Returning success.",
                   "ensureChunkVersionIsGreaterThan found that the chunk already has a higher "
                   "version; "
                   "returning success",
@@ -2003,6 +2010,12 @@ void ShardingCatalogManager::ensureChunkVersionIsGreaterThan(OperationContext* o
                 .docs;
         if (highestChunksVector.empty()) {
             LOGV2(23886,
+                  "ensureChunkVersionIsGreaterThan did not find any chunks with epoch {epoch} "
+                  "when "
+                  "attempting to find the collection placement version. The collection must have "
+                  "been "
+                  "dropped "
+                  "concurrently or had its shard key refined. Returning success.",
                   "ensureChunkVersionIsGreaterThan did not find any chunks with a matching epoch "
                   "when "
                   "attempting to find the collection placement version. The collection must have "
@@ -2033,6 +2046,9 @@ void ShardingCatalogManager::ensureChunkVersionIsGreaterThan(OperationContext* o
                                                                   kNoWaitWriteConcern));
     if (didUpdate) {
         LOGV2(23887,
+              "ensureChunkVersionIsGreaterThan bumped the version of the chunk with minKey "
+              "{minKey}, "
+              "maxKey {maxKey}, and epoch {epoch}. Chunk is now {newChunk}",
               "ensureChunkVersionIsGreaterThan bumped the the chunk version",
               "minKey"_attr = minKey,
               "maxKey"_attr = maxKey,
@@ -2040,6 +2056,11 @@ void ShardingCatalogManager::ensureChunkVersionIsGreaterThan(OperationContext* o
               "newChunk"_attr = newChunk.toConfigBSON());
     } else {
         LOGV2(23888,
+              "ensureChunkVersionIsGreaterThan did not find a chunk matching minKey {minKey}, "
+              "maxKey {maxKey}, and epoch {epoch} when trying to bump its version. The "
+              "collection "
+              "must have been dropped concurrently or had its shard key refined. Returning "
+              "success.",
               "ensureChunkVersionIsGreaterThan did not find a matching chunk when trying to bump "
               "its "
               "version. The collection must have been dropped concurrently or had its shard key "
@@ -2140,7 +2161,10 @@ void ShardingCatalogManager::splitOrMarkJumbo(OperationContext* opCtx,
                                               limit));
 
         if (splitPoints.empty()) {
-            LOGV2(21873, "Marking chunk as jumbo", "chunk"_attr = redact(chunk.toString()));
+            LOGV2(21873,
+                  "Marking chunk {chunk} as jumbo",
+                  "Marking chunk as jumbo",
+                  "chunk"_attr = redact(chunk.toString()));
             chunk.markAsJumbo();
 
             // Take _kChunkOpLock in exclusive mode to prevent concurrent chunk modifications. Note
@@ -2176,6 +2200,8 @@ void ShardingCatalogManager::splitOrMarkJumbo(OperationContext* opCtx,
                 ShardingCatalogClient::kMajorityWriteConcern);
             if (!status.isOK()) {
                 LOGV2(21874,
+                      "Couldn't mark chunk with namespace {namespace} and min key {minKey} as "
+                      "jumbo due to {error}",
                       "Couldn't mark chunk as jumbo",
                       "namespace"_attr = redact(toStringForLogging(nss)),
                       "minKey"_attr = redact(chunk.getMin()),

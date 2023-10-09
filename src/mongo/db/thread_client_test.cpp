@@ -86,8 +86,7 @@ TEST_F(ThreadClientTest, TestAlternativeClientRegion) {
     ASSERT_FALSE(haveClient());
     ThreadClient threadClient(getThreadName(), getGlobalServiceContext());
 
-    ServiceContext::UniqueClient swapClient =
-        getGlobalServiceContext()->getService()->makeClient("swapClient");
+    ServiceContext::UniqueClient swapClient = getGlobalServiceContext()->makeClient("swapClient");
     { AlternativeClientRegion altRegion(swapClient); }
 
     ASSERT_TRUE(haveClient());

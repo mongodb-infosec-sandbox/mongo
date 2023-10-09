@@ -89,21 +89,21 @@ public:
     /**
      * Creates a standalone connection string with the specified server.
      */
-    explicit ConnectionString(HostAndPort server);
+    explicit ConnectionString(const HostAndPort& server);
 
     /**
      * Creates a connection string from an unparsed list of servers, type, and replicaSetName.
      */
-    ConnectionString(ConnectionType type, std::string s, std::string replicaSetName);
+    ConnectionString(ConnectionType type, const std::string& s, const std::string& replicaSetName);
 
     /**
      * Creates a connection string from a pre-parsed list of servers, type, and replicaSetName.
      */
     ConnectionString(ConnectionType type,
                      std::vector<HostAndPort> servers,
-                     std::string replicaSetName);
+                     const std::string& replicaSetName);
 
-    ConnectionString(std::string s, ConnectionType connType);
+    ConnectionString(const std::string& s, ConnectionType connType);
 
     bool isValid() const {
         return _type != ConnectionType::kInvalid;

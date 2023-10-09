@@ -181,8 +181,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel = 0) const;
 
     virtual void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                               const SerializationOptions& opts = {},
-                                               bool includePath = true) const;
+                                               const SerializationOptions& opts) const;
 
     virtual bool equivalent(const MatchExpression* other) const;
 
@@ -541,8 +540,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel) const;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     void serializeToBSONTypeRegex(BSONObjBuilder* out) const;
 
@@ -625,8 +623,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel) const;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     virtual bool equivalent(const MatchExpression* other) const;
 
@@ -694,8 +691,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel) const;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     virtual bool equivalent(const MatchExpression* other) const;
 
@@ -734,8 +730,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel) const;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     virtual bool equivalent(const MatchExpression* other) const;
 
@@ -902,8 +897,7 @@ public:
     virtual void debugString(StringBuilder& debug, int indentationLevel) const;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     virtual bool equivalent(const MatchExpression* other) const;
 

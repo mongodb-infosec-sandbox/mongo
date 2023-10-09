@@ -95,6 +95,8 @@ public:
             const auto& cmd = request();
             LOGV2_DEBUG(7329200,
                         1,
+                        "Received voteAbortIndexBuild request for index build: {buildUUID}, "
+                        "from host: {host}",
                         "Received voteAbortIndexBuild request",
                         "buildUUID"_attr = cmd.getCommandParameter(),
                         "host"_attr = cmd.getHostAndPort().toString(),

@@ -91,9 +91,7 @@ Value ExprMatchExpression::evaluateExpression(const MatchableDocument* doc) cons
     return _expression->evaluate(document, &variables);
 }
 
-void ExprMatchExpression::serialize(BSONObjBuilder* out,
-                                    const SerializationOptions& opts,
-                                    bool includePath) const {
+void ExprMatchExpression::serialize(BSONObjBuilder* out, const SerializationOptions& opts) const {
     *out << "$expr" << _expression->serialize(opts);
 }
 

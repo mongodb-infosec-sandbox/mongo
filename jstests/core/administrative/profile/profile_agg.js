@@ -14,8 +14,7 @@ import {getLatestProfilerEntry} from "jstests/libs/profiler.js";
 
 const testDB = db.getSiblingDB("profile_agg");
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName();
-const coll = testDB.getCollection(collName);
+const coll = testDB.getCollection("test");
 
 testDB.setProfilingLevel(2);
 

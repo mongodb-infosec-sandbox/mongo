@@ -628,53 +628,5 @@ TEST_F(NamespaceStringTest, CompareNSSWithTenantId) {
     ASSERT_GT(ns3, ns2);
 }
 
-TEST_F(NamespaceStringTest, EmptyNamespaceString) {
-    const auto emptyNss = NamespaceString();
-    const auto kEmptyNss = NamespaceString::kEmpty;
-    ASSERT_EQ(emptyNss, kEmptyNss);
-    ASSERT_EQ(emptyNss.toStringForErrorMsg(), kEmptyNss.toStringForErrorMsg());
-    ASSERT_EQ(emptyNss.dbName(), DatabaseName::kEmpty);
-    ASSERT_EQ(emptyNss.coll().empty(), true);
-    ASSERT_EQ(emptyNss.toStringForErrorMsg(), "");
-}
-
-TEST_F(NamespaceStringTest, isDbOnly) {
-    TenantId tenantId(OID::gen());
-
-    // Namespaces that should succeed validation because of being db only.
-    const std::vector<NamespaceString> dbOnlyNamespaces = {
-        makeNamespaceString(boost::none, "foo"),
-        makeNamespaceString(tenantId, "foo"),
-        makeNamespaceString(boost::none, "foo."),  // ignores the period
-        makeNamespaceString(tenantId, "foo."),     // ignores the period
-        makeNamespaceString(boost::none, "."),     // ignores the period, empty db
-        makeNamespaceString(tenantId, "."),        // ignores the period, `tenantId_`
-        NamespaceString::createNamespaceString_forTest(
-            DatabaseName::createDatabaseName_forTest(boost::none, "foo")),
-        NamespaceString::createNamespaceString_forTest(
-            DatabaseName::createDatabaseName_forTest(tenantId, "foo")),
-        makeNamespaceString(DatabaseName::createDatabaseName_forTest(boost::none, "foo"), ""),
-        makeNamespaceString(DatabaseName::createDatabaseName_forTest(tenantId, "foo"), ""),
-        NamespaceString(),
-        NamespaceString::kEmpty};
-
-    // Namespaces that should fail validation because of the coll.
-    const std::vector<NamespaceString> dbAndCollNamespaces = {
-        makeNamespaceString(boost::none, "foo.a"),
-        makeNamespaceString(tenantId, "foo.a"),
-        makeNamespaceString(DatabaseName::createDatabaseName_forTest(boost::none, "foo"), "bar"),
-        NamespaceString::createNamespaceString_forTest(
-            DatabaseName::createDatabaseName_forTest(tenantId, "foo"), "bar")};
-
-    for (const auto& nss : dbOnlyNamespaces) {
-        std::cout << "nss=" << nss.toStringForErrorMsg() << std::endl;
-        ASSERT_TRUE(nss.isDbOnly());
-    }
-
-    for (const auto& nss : dbAndCollNamespaces) {
-        ASSERT_FALSE(nss.isDbOnly());
-    }
-}
-
 }  // namespace
 }  // namespace mongo

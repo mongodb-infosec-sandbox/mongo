@@ -118,7 +118,7 @@ private:
  */
 struct TicketHolderTestFixture::MockAdmission {
     MockAdmission(ServiceContext* serviceContext, AdmissionContext::Priority priority) {
-        client = serviceContext->getService()->makeClient("");
+        client = serviceContext->makeClient("");
         opCtx = client->makeOperationContext();
         admCtx.setPriority(priority);
     }

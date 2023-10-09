@@ -378,7 +378,7 @@ StatusWith<CollectionRoutingInfo> getCollectionRoutingInfoForTxnCmd(OperationCon
  *
  * Will not retry on StaleConfig or StaleDbVersion errors.
  */
-StatusWith<Shard::QueryResponse> loadIndexesFromAuthoritativeShard(
-    OperationContext* opCtx, const NamespaceString& nss, const CollectionRoutingInfo& cri);
+StatusWith<Shard::QueryResponse> loadIndexesFromAuthoritativeShard(OperationContext* opCtx,
+                                                                   const NamespaceString& nss);
 
 }  // namespace mongo

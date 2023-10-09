@@ -1183,6 +1183,7 @@ boost::optional<bool> shouldForceEligibility(QueryFrameworkControlEnum framework
     // be set to enable bonsai if featureFlagCommonQueryFramework is enabled.
     LOGV2_DEBUG(7325101,
                 4,
+                "internalQueryFrameworkControl={knob}",
                 "logging internalQueryFrameworkControl",
                 "knob"_attr = QueryFrameworkControl_serializer(frameworkControl));
 

@@ -107,13 +107,11 @@ public:
     /**
      * Serializes each subexpression sequentially in a BSONArray.
      */
-    void serialize(BSONObjBuilder* builder,
-                   const SerializationOptions& opts = {},
-                   bool includePath = true) const final {
+    void serialize(BSONObjBuilder* builder, const SerializationOptions& opts) const final {
         BSONArrayBuilder exprArray(builder->subarrayStart(name()));
         for (const auto& expr : _expressions) {
             BSONObjBuilder exprBuilder(exprArray.subobjStart());
-            expr->serialize(&exprBuilder, opts, includePath);
+            expr->serialize(&exprBuilder, opts);
             exprBuilder.doneFast();
         }
         exprArray.doneFast();

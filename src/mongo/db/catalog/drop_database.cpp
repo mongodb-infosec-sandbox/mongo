@@ -215,7 +215,8 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
             dropDatabaseHangHoldingLock.pauseWhileSet();
         }
 
-        LOGV2(20337, "dropDatabase - starting", logAttrs(dbName));
+        LOGV2(
+            20337, "dropDatabase {dbName} - starting", "dropDatabase - starting", logAttrs(dbName));
         db->setDropPending(opCtx, true);
 
         // If Database::dropCollectionEvenIfSystem() fails, we should reset the drop-pending state
@@ -286,6 +287,7 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
             ++numCollections;
             const auto& nss = viewCollPtr->ns();
             LOGV2(7193700,
+                  "dropDatabase {dbName} - dropping collection: {nss}",
                   "dropDatabase - dropping collection",
                   logAttrs(dbName),
                   "namespace"_attr = nss);
@@ -342,6 +344,7 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
             numCollections++;
 
             LOGV2(20338,
+                  "dropDatabase {dbName} - dropping collection: {nss}",
                   "dropDatabase - dropping collection",
                   logAttrs(dbName),
                   "namespace"_attr = nss);
@@ -349,6 +352,7 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
             if (nss.isDropPendingNamespace() && replCoord->getSettings().isReplSet() &&
                 opCtx->writesAreReplicated()) {
                 LOGV2(20339,
+                      "dropDatabase {dbName} - found drop-pending collection: {nss}",
                       "dropDatabase - found drop-pending collection",
                       logAttrs(dbName),
                       "namespace"_attr = nss);
@@ -440,6 +444,9 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
         WriteConcernOptions::kMajority, WriteConcernOptions::SyncMode::UNSET, wTimeout);
 
     LOGV2(20340,
+          "dropDatabase {dbName} waiting for {awaitOpTime} to be replicated at "
+          "{dropDatabaseWriteConcern}. Dropping {numCollectionsToDrop} collection(s), with "
+          "last collection drop at {latestDropPendingOpTime}",
           "dropDatabase waiting for replication and dropping collections",
           logAttrs(dbName),
           "awaitOpTime"_attr = awaitOpTime,
@@ -452,6 +459,8 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
     // If the user-provided write concern is weaker than majority, this is effectively a no-op.
     if (result.status.isOK() && !userWriteConcern.usedDefaultConstructedWC) {
         LOGV2(20341,
+              "dropDatabase {dbName} waiting for {awaitOpTime} to be replicated at "
+              "{userWriteConcern}",
               "dropDatabase waiting for replication",
               logAttrs(dbName),
               "awaitOpTime"_attr = awaitOpTime,
@@ -468,6 +477,8 @@ Status _dropDatabase(OperationContext* opCtx, const DatabaseName& dbName, bool a
     }
 
     LOGV2(20342,
+          "dropDatabase {dbName} - successfully dropped {numCollectionsToDrop} collection(s) "
+          "(most recent drop optime: {awaitOpTime}) after {result_duration}. dropping database",
           "dropDatabase - successfully dropped collections",
           logAttrs(dbName),
           "numCollectionsDropped"_attr = numCollectionsToDrop,

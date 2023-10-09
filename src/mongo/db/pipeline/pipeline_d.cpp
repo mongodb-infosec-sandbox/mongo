@@ -545,8 +545,7 @@ StatusWith<std::unique_ptr<CanonicalQuery>> createCanonicalQuery(
     std::unique_ptr<FindCommandRequest> findCommand,
     const QueryMetadataBitSet& metadataRequested,
     const MatchExpressionParser::AllowedFeatureSet& matcherFeatures,
-    bool isCountLike,
-    bool isSearchQuery) {
+    bool isCountLike) {
     // Reset the 'sbeCompatible' flag before canonicalizing the 'findCommand' to potentially allow
     // SBE to execute the portion of the query that's pushed down, even if the portion of the query
     // that is not pushed down contains expressions not supported by SBE.
@@ -560,8 +559,7 @@ StatusWith<std::unique_ptr<CanonicalQuery>> createCanonicalQuery(
                                            matcherFeatures,
                                            ProjectionPolicies::aggregateProjectionPolicies(),
                                            {} /* empty pipeline */,
-                                           isCountLike,
-                                           isSearchQuery);
+                                           isCountLike);
 
     if (cq.isOK()) {
         // Mark the metadata that's requested by the pipeline on the CQ.
@@ -581,13 +579,8 @@ StatusWith<std::unique_ptr<PlanExecutor, PlanExecutor::Deleter>> attemptToGetExe
     const MatchExpressionParser::AllowedFeatureSet& matcherFeatures,
     Pipeline* pipeline,
     bool isCountLike) {
-    auto cq = createCanonicalQuery(expCtx,
-                                   nss,
-                                   std::move(findCommand),
-                                   metadataRequested,
-                                   matcherFeatures,
-                                   isCountLike,
-                                   PipelineD::isSearchPresentAndEligibleForSbe(pipeline));
+    auto cq = createCanonicalQuery(
+        expCtx, nss, std::move(findCommand), metadataRequested, matcherFeatures, isCountLike);
     if (!cq.isOK()) {
         // Return an error instead of uasserting, since there are cases where the combination of
         // sort and projection will result in a bad query, but when we try with a different
@@ -1112,8 +1105,22 @@ PipelineD::buildInnerQueryExecutor(const MultipleCollectionAccessor& collections
     Pipeline::SourceContainer& sources = pipeline->_sources;
 
     // We skip the 'requiresInputDocSource' check in the case of pushing $search down into SBE,
-    // as $search has 'requiresInputDocSource' as false.
-    bool skipRequiresInputDocSourceCheck = isSearchPresentAndEligibleForSbe(pipeline);
+    // as $search has 'requiresInputDocSource' as false. Specifically, we skip this check if
+    // it is a $search pipeline, 'featureFlagSearchInSbe' is enabled and forceClassicEngine
+    // is false.
+    auto firstStageIsSearch =
+        getSearchHelpers(expCtx->opCtx->getServiceContext())->isSearchPipeline(pipeline) ||
+        getSearchHelpers(expCtx->opCtx->getServiceContext())->isSearchMetaPipeline(pipeline);
+
+    // (Ignore FCV check): FCV checking is unnecessary because SBE execution is local to a given
+    // node.
+    auto searchInSbeEnabled = feature_flags::gFeatureFlagSearchInSbe.isEnabledAndIgnoreFCVUnsafe();
+    auto forceClassicEngine =
+        QueryKnobConfiguration::decoration(expCtx->opCtx).getInternalQueryFrameworkControlForOp() ==
+        QueryFrameworkControlEnum::kForceClassicEngine;
+
+    bool skipRequiresInputDocSourceCheck =
+        firstStageIsSearch && searchInSbeEnabled && !forceClassicEngine;
 
     if (!skipRequiresInputDocSourceCheck && !sources.empty() &&
         !sources.front()->constraints().requiresInputDocSource) {
@@ -1630,6 +1637,12 @@ PipelineD::buildInnerQueryExecutorGeneric(const MultipleCollectionAccessor& coll
     if (unpack && !unpack->isSbeCompatible()) {
         expCtx->sbePipelineCompatibility = SbeCompatibility::notCompatible;
     }
+    if (unpack && sort) {
+        // TODO SERVER-79061: disable only the case when it's possible for bounded sort to be used.
+        // NB: tests in jstests/core/timeseries/timeseries_lastpoint.js over-specify the expected
+        // plan shapes and fail when lowered to SBE even if the bounded sort isn't used.
+        expCtx->sbePipelineCompatibility = SbeCompatibility::notCompatible;
+    }
 
     // But in classic it may be eligible for a post-planning sort optimization. We check eligibility
     // and perform the rewrite here.
@@ -2138,22 +2151,5 @@ BSONObj PipelineD::getPostBatchResumeToken(const Pipeline* pipeline) {
         return docSourceCursor->getPostBatchResumeToken();
     }
     return BSONObj{};
-}
-
-bool PipelineD::isSearchPresentAndEligibleForSbe(const Pipeline* pipeline) {
-    auto expCtx = pipeline->getContext();
-
-    auto firstStageIsSearch =
-        getSearchHelpers(expCtx->opCtx->getServiceContext())->isSearchPipeline(pipeline) ||
-        getSearchHelpers(expCtx->opCtx->getServiceContext())->isSearchMetaPipeline(pipeline);
-
-    // (Ignore FCV check): FCV checking is unnecessary because SBE execution is local to a given
-    // node.
-    auto searchInSbeEnabled = feature_flags::gFeatureFlagSearchInSbe.isEnabledAndIgnoreFCVUnsafe();
-    auto forceClassicEngine =
-        QueryKnobConfiguration::decoration(expCtx->opCtx).getInternalQueryFrameworkControlForOp() ==
-        QueryFrameworkControlEnum::kForceClassicEngine;
-
-    return firstStageIsSearch && searchInSbeEnabled && !forceClassicEngine;
 }
 }  // namespace mongo

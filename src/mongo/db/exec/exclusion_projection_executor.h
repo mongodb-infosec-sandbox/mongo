@@ -113,9 +113,6 @@ protected:
     Value transformSkippedValueForOutput(const Value& value) const final {
         return value;
     }
-    bool isIncluded() const final {
-        return false;
-    }
 };
 
 /**

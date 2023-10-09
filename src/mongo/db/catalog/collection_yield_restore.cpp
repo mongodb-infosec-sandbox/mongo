@@ -63,7 +63,7 @@ bool locked(OperationContext* opCtx, const NamespaceString& ns) {
 
 LockedCollectionYieldRestore::LockedCollectionYieldRestore(OperationContext* opCtx,
                                                            const CollectionPtr& coll)
-    : _nss(coll ? coll->ns() : NamespaceString::kEmpty) {
+    : _nss(coll ? coll->ns() : NamespaceString()) {
     invariant(locked(opCtx, _nss));
 }
 

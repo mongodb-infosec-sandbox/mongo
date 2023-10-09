@@ -62,8 +62,7 @@ public:
     void debugString(StringBuilder& debug, int indentationLevel) const final;
 
     void appendSerializedRightHandSide(BSONObjBuilder* bob,
-                                       const SerializationOptions& opts = {},
-                                       bool includePath = true) const final;
+                                       const SerializationOptions& opts) const final;
 
     bool equivalent(const MatchExpression* other) const final;
 

@@ -19,8 +19,7 @@ const db = conn.getDB("test");
 
 const testDB = db.getSiblingDB(jsTestName());
 assert.commandWorked(testDB.dropDatabase());
-const collName = jsTestName();
-const coll = testDB.getCollection(collName);
+const coll = testDB.getCollection("test");
 const doc = {
     a: 1,
     b: 1

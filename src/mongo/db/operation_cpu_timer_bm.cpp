@@ -61,7 +61,7 @@ public:
     Fixture() {
         setGlobalServiceContext(ServiceContext::make());
         getGlobalServiceContext()->registerClientObserver(std::make_unique<LockerClientObserver>());
-        _client = getGlobalServiceContext()->getService()->makeClient("test");
+        _client = getGlobalServiceContext()->makeClient("test");
     }
 
     auto makeOpCtx() {

@@ -219,6 +219,8 @@ Status renameTargetCollectionToTmp(OperationContext* opCtx,
         wunit.commit();
 
         LOGV2(20397,
+              "Successfully renamed the target {targetNs} ({targetUUID}) to {tmpName} so that the "
+              "source {sourceNs} ({sourceUUID}) could be renamed to {targetNs2}",
               "Successfully renamed the target so that the source could be renamed",
               "existingTargetNamespace"_attr = targetNs,
               "existingTargetUUID"_attr = targetUUID,
@@ -302,6 +304,8 @@ Status renameCollectionAndDropTarget(OperationContext* opCtx,
             if (!renameOpTime.isNull()) {
                 LOGV2_FATAL(
                     40616,
+                    "renameCollection: {from} to {to} (with dropTarget=true) - unexpected "
+                    "renameCollection oplog entry written to the oplog with optime {renameOpTime}",
                     "renameCollection (with dropTarget=true): unexpected renameCollection oplog "
                     "entry written to the oplog",
                     "from"_attr = source,
@@ -633,6 +637,8 @@ Status renameCollectionAcrossDatabases(OperationContext* opCtx,
             // Ignoring failure case when dropping the temporary collection during cleanup because
             // the rename operation has already failed for another reason.
             LOGV2(705521,
+                  "Unable to drop temporary collection {tmpName} while renaming from {source} to "
+                  "{target}: {error}",
                   "Unable to drop temporary collection while renaming",
                   "tempCollection"_attr = tmpName,
                   "source"_attr = source,
@@ -800,52 +806,41 @@ void doLocalRenameIfOptionsAndIndexesHaveNotChanged(OperationContext* opCtx,
                                                     std::list<BSONObj> originalIndexes,
                                                     BSONObj originalCollectionOptions) {
     AutoGetDb dbLock(opCtx, targetNs.dbName(), MODE_X);
-
-    // Check target collection options match expected.
     auto collection = dbLock.getDb()
         ? CollectionCatalog::get(opCtx)->lookupCollectionByNamespace(opCtx, targetNs)
         : nullptr;
-    const BSONObj collectionOptions =
-        collection ? collection->getCollectionOptions().toBSON() : BSONObj();
-    checkTargetCollectionOptionsMatch(targetNs, originalCollectionOptions, collectionOptions);
+    BSONObj collectionOptions = {};
+    if (collection) {
+        // We do not include the UUID field in the options comparison. It is ok if the target
+        // collection was dropped and recreated, as long as the new target collection has the same
+        // options and indexes as the original one did. This is mainly to support concurrent $out
+        // to the same collection.
+        collectionOptions = collection->getCollectionOptions().toBSON().removeField("uuid");
+    }
 
-    // Check target collection indexes match expected.
-    const auto currentIndexes =
-        listIndexesEmptyListIfMissing(opCtx, targetNs, ListIndexesInclude::Nothing);
-    checkTargetCollectionIndexesMatch(targetNs, originalIndexes, currentIndexes);
-
-    validateAndRunRenameCollection(opCtx, sourceNs, targetNs, options);
-}
-
-void checkTargetCollectionOptionsMatch(const NamespaceString& targetNss,
-                                       const BSONObj& expectedOptions,
-                                       const BSONObj& currentOptions) {
-    // We do not include the UUID field in the options comparison. It is ok if the target collection
-    // was dropped and recreated, as long as the new target collection has the same options and
-    // indexes as the original one did. This is mainly to support concurrent $out to the same
-    // collection.
     uassert(ErrorCodes::CommandFailed,
             str::stream() << "collection options of target collection "
-                          << targetNss.toStringForErrorMsg()
-                          << " changed during processing. Original options: " << expectedOptions
-                          << ", new options: " << currentOptions,
-            SimpleBSONObjComparator::kInstance.evaluate(expectedOptions.removeField("uuid") ==
-                                                        currentOptions.removeField("uuid")));
-}
+                          << targetNs.toStringForErrorMsg()
+                          << " changed during processing. Original options: "
+                          << originalCollectionOptions << ", new options: " << collectionOptions,
+            SimpleBSONObjComparator::kInstance.evaluate(
+                originalCollectionOptions.removeField("uuid") == collectionOptions));
 
-void checkTargetCollectionIndexesMatch(const NamespaceString& targetNss,
-                                       const std::list<BSONObj>& expectedIndexes,
-                                       const std::list<BSONObj>& currentIndexes) {
+    auto currentIndexes =
+        listIndexesEmptyListIfMissing(opCtx, targetNs, ListIndexesInclude::Nothing);
+
     UnorderedFieldsBSONObjComparator comparator;
     uassert(
         ErrorCodes::CommandFailed,
-        str::stream() << "indexes of target collection " << targetNss.toStringForErrorMsg()
+        str::stream() << "indexes of target collection " << targetNs.toStringForErrorMsg()
                       << " changed during processing.",
-        expectedIndexes.size() == currentIndexes.size() &&
-            std::equal(expectedIndexes.begin(),
-                       expectedIndexes.end(),
+        originalIndexes.size() == currentIndexes.size() &&
+            std::equal(originalIndexes.begin(),
+                       originalIndexes.end(),
                        currentIndexes.begin(),
                        [&](auto& lhs, auto& rhs) { return comparator.compare(lhs, rhs) == 0; }));
+
+    validateAndRunRenameCollection(opCtx, sourceNs, targetNs, options);
 }
 
 void validateNamespacesForRenameCollection(OperationContext* opCtx,
@@ -965,6 +960,7 @@ Status renameCollection(OperationContext* opCtx,
 
     StringData dropTargetMsg = options.dropTarget ? "yes"_sd : "no"_sd;
     LOGV2(20400,
+          "renameCollectionForCommand: rename {source} to {target}{dropTargetMsg}",
           "renameCollectionForCommand",
           "sourceNamespace"_attr = source,
           "targetNamespace"_attr = target,
@@ -1068,6 +1064,8 @@ Status renameCollectionForApplyOps(OperationContext* opCtx,
     const std::string uuidToDropString = uuidToDrop ? uuidToDrop->toString() : "<none>";
     const std::string uuidString = uuidToRename ? uuidToRename->toString() : "UUID unknown";
     LOGV2(20401,
+          "renameCollectionForApplyOps: rename {sourceNss} ({uuidString}) to "
+          "{targetNss}{dropTargetMsg}",
           "renameCollectionForApplyOps",
           "sourceNamespace"_attr = sourceNss,
           "uuid"_attr = uuidString,
@@ -1095,6 +1093,7 @@ Status renameCollectionForRollback(OperationContext* opCtx,
                             << ". target: " << target.toStringForErrorMsg());
 
     LOGV2(20402,
+          "renameCollectionForRollback: rename {source} ({uuid}) to {target}.",
           "renameCollectionForRollback",
           "source"_attr = *source,
           "uuid"_attr = uuid,

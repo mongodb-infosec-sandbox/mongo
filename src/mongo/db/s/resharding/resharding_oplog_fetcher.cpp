@@ -196,7 +196,7 @@ ExecutorFuture<void> ReshardingOplogFetcher::schedule(
     }
 
     return ExecutorFuture(executor)
-        .then([this, executor, cancelToken, factory]() mutable {
+        .then([this, executor, cancelToken, factory] {
             return _reschedule(std::move(executor), cancelToken, factory);
         })
         .onError([](Status status) {
@@ -232,7 +232,7 @@ ExecutorFuture<void> ReshardingOplogFetcher::_reschedule(
                 return moreToCome;
             });
         })
-        .then([this, executor, cancelToken, factory](bool moreToCome) mutable {
+        .then([this, executor, cancelToken, factory](bool moreToCome) {
             if (!moreToCome) {
                 LOGV2_INFO(6077401,
                            "Resharding oplog fetcher done fetching",
@@ -243,7 +243,7 @@ ExecutorFuture<void> ReshardingOplogFetcher::_reschedule(
 
             if (cancelToken.isCanceled()) {
                 return ExecutorFuture<void>(
-                    std::move(executor),
+                    executor,
                     Status{ErrorCodes::CallbackCanceled,
                            "Resharding oplog fetcher canceled due to abort or stepdown"});
             }
