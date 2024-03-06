@@ -35,7 +35,7 @@
     "react-force-graph-3d": "1.23.0",
     "react-indiana-drag-scroll": "^2.2.0",
     "react-redux": "^8.0.5",
-    "react-resize-aware": "3.1.1",
+    "react-resize-aware": "3.1.2",
     "react-resize-detector": "^9.1.0",
     "react-scripts": "^5.0.1",
     "react-split-pane": "^0.1.92",
